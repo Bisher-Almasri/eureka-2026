@@ -2512,29 +2512,40 @@ class GyftTUI(App):
 
     def on_mount(self) -> None:
         self.push_screen(DashboardScreen())
+        self.set_interval(3.0, self._check_face_status)
+
+    @work(thread=True)
+    def _check_face_status(self) -> None:
+        try:
+            req = request.Request("http://127.0.0.1:5001/status")
+            with request.urlopen(req, timeout=1) as response:
+                status = response.read().decode("utf-8")
+                if "NOT FOCUSED" in status:
+                    # Buzz for 2 seconds when distracted based on face tracking
+                    self._send_buzz_request(2)
+        except Exception:
+            pass
 
     def on_blur(self) -> None:
         """Send buzz request when user stops focusing on the app."""
         self._send_buzz_request()
 
-    def _send_buzz_request(self) -> None:
+    def _send_buzz_request(self, seconds: int | None = None) -> None:
         """Send a POST request to /hardware/buzz with the number of modals."""
-        # try:
-        #     # Calculate number of modals: screen_stack length - 1 (base dashboard)
-        #     num_modals = len(self.screen_stack) - 1
+        try:
+            # Calculate number of modals: screen_stack length - 1 (base dashboard)
+            if seconds is None:
+                seconds = max(0, len(self.screen_stack) - 1)
             
-        #     payload = json.dumps({"seconds": num_modals})
-        #     req = request.Request(
-        #         "http://127.0.0.1:8000/hardware/buzz",
-        #         data=payload.encode("utf-8"),
-        #         headers={"Content-Type": "application/json"},
-        #         method="POST",
-        #     )
-        #     with request.urlopen(req) as response:
-        #         response.read()
-        # except Exception as e:
-        #     # Silently fail if the request doesn't go through
-        #     pass
+            req = request.Request(
+                f"http://192.168.254.98:1504/buzz?seconds={seconds}",
+                method="POST",
+            )
+            with request.urlopen(req) as response:
+                response.read()
+        except Exception as e:
+            # Silently fail if the request doesn't go through
+            pass
 
 
 if __name__ == "__main__":

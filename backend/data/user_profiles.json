@@ -105,9 +105,11 @@
       "Overview of Svelte": 6,
       "Reactive Statements": 2,
       "Setting Up Svelte": 2,
-      "Why Choose Svelte?": 9
+      "What is Content Creation?": 13,
+      "Why Choose Svelte?": 9,
+      "Why Content Creation Matters": 18
     },
-    "updated_at": "2026-05-02T16:17:20.870969+00:00",
+    "updated_at": "2026-05-02T19:10:04.672876+00:00",
     "user_id": "default"
   }
 }

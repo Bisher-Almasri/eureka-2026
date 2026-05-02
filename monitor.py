@@ -423,6 +423,17 @@ def run_focus_guard(
 
                     snapshot = inspect_focus_state(check_tabs=check_tabs)
                     still_distracted = snapshot.is_distracted
+                    
+                    try:
+                        import urllib.request
+                        req = urllib.request.Request(
+                            f"http://192.168.254.98:1504/buzz?seconds={popup_count}",
+                            method="POST"
+                        )
+                        urllib.request.urlopen(req, timeout=2)
+                    except Exception:
+                        pass
+
                     if use_popup and ignored_count and still_distracted:
                         popup_count = min(max_popups, popup_count * 2)
                         next_annoy_at = now

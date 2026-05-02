@@ -110,5 +110,10 @@ def home():
 def video():
     return Response(gen(), mimetype="multipart/x-mixed-replace; boundary=frame")
 
+@app.route("/status")
+def get_status():
+    global status
+    return status
+
 app.run(host="0.0.0.0", port=5001, threaded=True)
 
