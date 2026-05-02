@@ -1,5 +1,5 @@
 """
-Gyft TUI — Textual port of the Gyft study app.
+Lockedf TUI — Textual port of the Lockedf study app.
 
 Two screens:
   • DashboardScreen — landing page with Create-Course card and course list
@@ -950,7 +950,7 @@ class NavBar(Static):
     def compose(self) -> ComposeResult:
         with Container(id="nav-wrap"):
             with Horizontal(id="nav"):
-                yield Static("Gyft", id="nav-brand")
+                yield Static("Lockedf", id="nav-brand")
                 for label in ("Dashboard", "Gyfts", "DDQ Animation"):
                     cls = "nav-item-active" if label == self._active else "nav-item"
                     yield Static(label, classes=cls)
@@ -964,7 +964,7 @@ class NavBar(Static):
 class DashboardScreen(Screen):
     BINDINGS = [
         Binding("ctrl+n", "focus_input", "New course"),
-        Binding("ctrl+m", "toggle_recording", "Record"),
+        Binding("ctrl+v", "toggle_recording", "Record"),
         Binding("q", "quit", "Quit"),
     ]
 
@@ -1010,7 +1010,7 @@ class DashboardScreen(Screen):
                     )
 
         yield Static(
-            "ready · ⌃N new course · ⌃M dictate · click a course to open · q quit",
+            "ready · ⌃N new course · ⌃V dictate · click a course to open · q quit",
             id="status",
         )
         yield Footer()
@@ -1039,7 +1039,7 @@ class DashboardScreen(Screen):
     def _start_recording(self) -> None:
         self.is_recording = True
         self.recording_stop_event = threading.Event()
-        self._set_status("🎤 Recording... speak now (stops if silent for 5s or press Ctrl+M)")
+        self._set_status("🎤 Recording... speak now (stops if silent for 5s or press Ctrl+V)")
         self.record_prompt_from_voice_ptt()
 
     def _stop_recording(self) -> None:
@@ -1066,7 +1066,7 @@ class DashboardScreen(Screen):
         prompt_input = self.query_one("#prompt-input", Input)
         prompt_input.value = transcript
         prompt_input.focus()
-        self._set_status("✓ Ready. Press Ctrl+M to record again, or Generate to start.")
+        self._set_status("✓ Ready. Press Ctrl+V to record again, or Generate to start.")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         bid = event.button.id or ""
@@ -1393,7 +1393,7 @@ class CourseScreen(Screen):
         Binding("right", "next_section", "Next"),
         Binding("space", "toggle_session", "Pause/Resume"),
         Binding("p", "practice", "Practice"),
-        Binding("ctrl+m", "toggle_recording", "Record"),
+        Binding("ctrl+v", "toggle_recording", "Record"),
         Binding("q", "quit", "Quit"),
     ]
 
@@ -1477,7 +1477,7 @@ class CourseScreen(Screen):
                     yield Button("Ask 🎤", id="ask-btn")
                     yield Button("Dictate", id="dictate-ask-btn")
 
-        yield Static("← / → navigate · ⌃M dictate · Esc back · q quit", id="status")
+        yield Static("← / → navigate · ⌃V dictate · Esc back · q quit", id="status")
         yield Footer()
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
@@ -1487,7 +1487,7 @@ class CourseScreen(Screen):
     def _start_question_recording(self) -> None:
         self.q_is_recording = True
         self.q_recording_stop_event = threading.Event()
-        self._set_status("🎤 Recording question... speak now (stops if silent for 5s or press Ctrl+M)")
+        self._set_status("🎤 Recording question... speak now (stops if silent for 5s or press Ctrl+V)")
         self.record_question_from_voice_ptt()
 
     def _stop_question_recording(self) -> None:
@@ -2506,7 +2506,7 @@ class ProfileScreen(Screen):
 
 class GyftTUI(App):
     CSS = CSS
-    TITLE = "Gyft"
+    TITLE = "Lockedf"
     SUB_TITLE = "Personalized AI learning, in your terminal"
     THEME = "dracula"
 
