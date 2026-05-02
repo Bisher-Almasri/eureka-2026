@@ -1,20 +1,113 @@
 {
   "default": {
-    "attempt_history": [],
-    "lessons_completed": [],
-    "quiz_scores": {},
-    "recent_mistakes": [],
-    "retries_per_quiz": {},
-    "skill_levels": {},
-    "skipped_sections": [],
-    "solutions": [],
-    "time_spent_per_lesson": {
-      "Body Paragraphs": 0,
-      "Conclusion": 0,
-      "Essay Outline": 2,
-      "Introduction": 2
+    "attempt_history": [
+      {
+        "at": "2026-05-02T12:52:14.468898+00:00",
+        "attempt": "def create_svelte_project_structure():\n    # TODO: Return a list of files and directories in a new Svelte project\n    return []",
+        "lesson_id": "Overview of Svelte",
+        "topic": "Svelte Project Setup"
+      }
+    ],
+    "lessons_completed": [
+      "Reactive Statements"
+    ],
+    "quiz_scores": {
+      "Overview of Svelte": [
+        {
+          "at": "2026-05-02T12:53:18.241588+00:00",
+          "lesson_id": "Overview of Svelte",
+          "retries": 4,
+          "score": 20
+        }
+      ],
+      "Reactive Statements": [
+        {
+          "at": "2026-05-02T12:15:11.734473+00:00",
+          "lesson_id": "Reactive Statements",
+          "retries": 0,
+          "score": 100
+        }
+      ],
+      "Svelte Project Setup": [
+        {
+          "at": "2026-05-02T12:52:14.468888+00:00",
+          "lesson_id": "Overview of Svelte",
+          "retries": 1,
+          "score": 50
+        }
+      ]
     },
-    "updated_at": "2026-05-02T05:53:12.662916+00:00",
+    "recent_mistakes": [
+      {
+        "at": "2026-05-02T12:52:14.468892+00:00",
+        "lesson_id": "Overview of Svelte",
+        "mistake": "test_svelte_structure",
+        "topic": "Svelte Project Setup"
+      },
+      {
+        "at": "2026-05-02T12:52:14.468893+00:00",
+        "lesson_id": "Overview of Svelte",
+        "mistake": "test_structure_not_empty",
+        "topic": "Svelte Project Setup"
+      },
+      {
+        "at": "2026-05-02T12:52:14.468894+00:00",
+        "lesson_id": "Overview of Svelte",
+        "mistake": "test_structure_contains_src",
+        "topic": "Svelte Project Setup"
+      },
+      {
+        "at": "2026-05-02T12:52:14.468895+00:00",
+        "lesson_id": "Overview of Svelte",
+        "mistake": "test_structure_contains_app_svelte",
+        "topic": "Svelte Project Setup"
+      },
+      {
+        "at": "2026-05-02T12:52:14.468895+00:00",
+        "lesson_id": "Overview of Svelte",
+        "mistake": "test_structure_contains_config",
+        "topic": "Svelte Project Setup"
+      },
+      {
+        "at": "2026-05-02T12:53:18.241591+00:00",
+        "lesson_id": "Overview of Svelte",
+        "mistake": "Overview of Svelte",
+        "topic": "Overview of Svelte"
+      }
+    ],
+    "retries_per_quiz": {
+      "Overview of Svelte": 1,
+      "Overview of Svelte-quiz": 4
+    },
+    "skill_levels": {
+      "Overview of Svelte": "beginner",
+      "Reactive Statements": "advanced",
+      "Svelte Project Setup": "beginner"
+    },
+    "skipped_sections": [],
+    "solutions": [
+      {
+        "at": "2026-05-02T12:52:14.468897+00:00",
+        "lesson_id": "Overview of Svelte",
+        "solution": "",
+        "topic": "Svelte Project Setup"
+      }
+    ],
+    "time_spent_per_lesson": {
+      "Body Paragraphs": 8,
+      "Component Events": 23,
+      "Component Props": 1,
+      "Conclusion": 0,
+      "Creating a Component": 4,
+      "Essay Outline": 2,
+      "Introduction": 21,
+      "Introduction to Rust": 13,
+      "Overview of Svelte": 6,
+      "Reactive Statements": 2,
+      "Setting Up Svelte": 2,
+      "Why Choose Svelte?": 9
+    },
+    "updated_at": "2026-05-02T16:17:20.870969+00:00",
     "user_id": "default"
   }
 }

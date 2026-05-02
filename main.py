@@ -19,11 +19,15 @@ Run:
 from __future__ import annotations
 
 import json
+import threading
 import time
 from dataclasses import dataclass, field
+import tempfile
+from pathlib import Path
 from typing import List
 from urllib import error, request
 from uuid import uuid4
+import wave
 
 from rich.syntax import Syntax
 from rich.text import Text
@@ -121,6 +125,83 @@ def _keywords_for_section(section: Section) -> list[str]:
         and word not in {"section", "about", "using", "learn", "value"}
     ]
     return list(dict.fromkeys(keywords[:8])) or ["code", "program"]
+
+
+def speak_text(text: str) -> None:
+    """Convert text to speech and play it."""
+    import pyttsx3
+
+    engine = pyttsx3.init()
+    engine.setProperty("rate", 150)
+    engine.say(text)
+    engine.runAndWait()
+
+
+def transcribe_speech_ptt(stop_event: threading.Event) -> str:
+    """Record audio until stop_event is set or max duration reached."""
+    import numpy as np
+    import sounddevice as sd
+    import speech_recognition as sr
+
+    sample_rate = 16000
+    chunk_size = 4096
+    max_duration = 30
+    silence_threshold = 500
+    silence_duration = 5.0
+
+    audio_chunks = []
+
+    def record():
+        start_time = time.time()
+        last_sound_time = start_time
+        with sd.InputStream(
+            samplerate=sample_rate, channels=1, dtype="int16", blocksize=chunk_size
+        ) as stream:
+            while not stop_event.is_set():
+                if (time.time() - start_time) > max_duration:
+                    break
+                data, overflow = stream.read(chunk_size)
+                if not overflow:
+                    audio_chunks.append(data.copy())
+                    amplitude = np.max(np.abs(data))
+                    if amplitude > silence_threshold:
+                        last_sound_time = time.time()
+                    elif (time.time() - last_sound_time) > silence_duration:
+                        stop_event.set()
+                        break
+                time.sleep(0.01)
+
+    record_thread = threading.Thread(target=record, daemon=True)
+    record_thread.start()
+    record_thread.join(timeout=max_duration + 1)
+
+    if not audio_chunks:
+        raise RuntimeError("No audio recorded.")
+
+    recorded_audio = np.concatenate(audio_chunks)
+
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
+        temp_path = Path(temp_file.name)
+
+    try:
+        with wave.open(str(temp_path), "wb") as wav_file:
+            wav_file.setnchannels(1)
+            wav_file.setsampwidth(2)
+            wav_file.setframerate(sample_rate)
+            wav_file.writeframes(recorded_audio.tobytes())
+
+        recognizer = sr.Recognizer()
+        with sr.AudioFile(str(temp_path)) as source:
+            audio_data = recognizer.record(source)
+
+        try:
+            return recognizer.recognize_google(audio_data).strip()
+        except sr.UnknownValueError as exc:
+            raise RuntimeError("I couldn't understand the recording.") from exc
+        except sr.RequestError as exc:
+            raise RuntimeError(f"Speech recognition service error: {exc}") from exc
+    finally:
+        temp_path.unlink(missing_ok=True)
 
 
 CODING_KEYWORDS = {
@@ -276,7 +357,106 @@ RUST_COURSE = Course(
     ],
 )
 
-COURSES = [RUST_COURSE]
+DATA_DIR = Path(__file__).resolve().parent / "backend" / "data"
+COURSES_PATH = DATA_DIR / "courses.json"
+
+
+def section_to_dict(section: Section) -> dict:
+    return {
+        "title": section.title,
+        "body": section.body,
+        "code": section.code,
+        "code_lang": section.code_lang,
+        "footer": section.footer,
+        "challenge": section.challenge if isinstance(section.challenge, dict) else None,
+    }
+
+
+def section_from_dict(data: dict) -> Section:
+    code = data.get("code")
+    footer = data.get("footer")
+    challenge = data.get("challenge")
+
+    return Section(
+        title=str(data.get("title") or "Untitled Section"),
+        body=str(data.get("body") or ""),
+        code=code if isinstance(code, str) else None,
+        code_lang=str(data.get("code_lang") or "text"),
+        footer=footer if isinstance(footer, str) else None,
+        challenge=challenge if isinstance(challenge, dict) else None,
+    )
+
+
+def course_to_dict(course: Course) -> dict:
+    return {
+        "title": course.title,
+        "is_coding": course.is_coding,
+        "parts": [
+            {
+                "title": part.title,
+                "sections": [section_to_dict(section) for section in part.sections],
+            }
+            for part in course.parts
+        ],
+    }
+
+
+def course_from_dict(data: dict) -> Course:
+    parts = []
+    for part_data in data.get("parts", []):
+        if not isinstance(part_data, dict):
+            continue
+        sections = [
+            section_from_dict(section_data)
+            for section_data in part_data.get("sections", [])
+            if isinstance(section_data, dict)
+        ]
+        parts.append(
+            Part(
+                title=str(part_data.get("title") or "Untitled Part"),
+                sections=sections,
+            )
+        )
+
+    return Course(
+        title=str(data.get("title") or "Untitled Course"),
+        parts=parts,
+        is_coding=bool(data.get("is_coding", True)),
+    )
+
+
+def load_courses() -> list[Course]:
+    if not COURSES_PATH.exists():
+        return [RUST_COURSE]
+
+    try:
+        with COURSES_PATH.open("r", encoding="utf-8") as courses_file:
+            data = json.load(courses_file)
+    except (json.JSONDecodeError, OSError):
+        return [RUST_COURSE]
+
+    raw_courses = data.get("courses") if isinstance(data, dict) else data
+    if not isinstance(raw_courses, list):
+        return [RUST_COURSE]
+
+    courses = [
+        course_from_dict(course_data)
+        for course_data in raw_courses
+        if isinstance(course_data, dict)
+    ]
+    return courses or [RUST_COURSE]
+
+
+def save_courses(courses: list[Course]) -> None:
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    tmp_path = COURSES_PATH.with_suffix(".tmp")
+    payload = {"courses": [course_to_dict(course) for course in courses]}
+    with tmp_path.open("w", encoding="utf-8") as courses_file:
+        json.dump(payload, courses_file, indent=2, sort_keys=True)
+    tmp_path.replace(COURSES_PATH)
+
+
+COURSES = load_courses()
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -510,7 +690,7 @@ Screen { background: $background; color: $text; }
 }
 
 #status {
-    dock: bottom; height: 1;
+    height: 1;
     background: $panel; color: $text-muted; padding: 0 3;
 }
 
@@ -784,8 +964,14 @@ class NavBar(Static):
 class DashboardScreen(Screen):
     BINDINGS = [
         Binding("ctrl+n", "focus_input", "New course"),
+        Binding("ctrl+m", "toggle_recording", "Record"),
         Binding("q", "quit", "Quit"),
     ]
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.is_recording = False
+        self.recording_stop_event: threading.Event | None = None
 
     def compose(self) -> ComposeResult:
         yield NavBar(active="DDQ Animation")
@@ -810,6 +996,7 @@ class DashboardScreen(Screen):
                     )
                 with Horizontal(id="create-button-row"):
                     yield Button("+ Generate Course", id="generate-btn")
+                    yield Button("Dictate", id="dictate-btn")
                     yield Button("Profile", id="profile-btn")
                     yield Button("Debug Coach", id="debug-btn")
 
@@ -823,13 +1010,19 @@ class DashboardScreen(Screen):
                     )
 
         yield Static(
-            "ready · ⌃N new course · click a course to open · Profile button · q quit",
+            "ready · ⌃N new course · ⌃M dictate · click a course to open · q quit",
             id="status",
         )
         yield Footer()
 
     def action_focus_input(self) -> None:
         self.query_one("#prompt-input", Input).focus()
+
+    def action_toggle_recording(self) -> None:
+        if not self.is_recording:
+            self._start_recording()
+        else:
+            self._stop_recording()
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         if event.input.id == "prompt-input":
@@ -843,10 +1036,44 @@ class DashboardScreen(Screen):
         self._set_status(f"Generating course: “{prompt}” … (Please wait)")
         self.fetch_course(prompt)
 
+    def _start_recording(self) -> None:
+        self.is_recording = True
+        self.recording_stop_event = threading.Event()
+        self._set_status("🎤 Recording... speak now (stops if silent for 5s or press Ctrl+M)")
+        self.record_prompt_from_voice_ptt()
+
+    def _stop_recording(self) -> None:
+        if self.recording_stop_event:
+            self.recording_stop_event.set()
+            self._set_status("⏸ Transcribing...")
+
+    @work(thread=True)
+    def record_prompt_from_voice_ptt(self) -> None:
+        try:
+            if self.recording_stop_event is None:
+                raise RuntimeError("Recording not initialized.")
+            transcript = transcribe_speech_ptt(self.recording_stop_event)
+            if not transcript:
+                raise RuntimeError("No speech was detected.")
+            self.app.call_from_thread(self._apply_dictated_prompt, transcript)
+        except Exception as exc:
+            self.app.call_from_thread(self._set_status, f"Recording failed: {exc}")
+        finally:
+            self.is_recording = False
+            self.recording_stop_event = None
+
+    def _apply_dictated_prompt(self, transcript: str) -> None:
+        prompt_input = self.query_one("#prompt-input", Input)
+        prompt_input.value = transcript
+        prompt_input.focus()
+        self._set_status("✓ Ready. Press Ctrl+M to record again, or Generate to start.")
+
     def on_button_pressed(self, event: Button.Pressed) -> None:
         bid = event.button.id or ""
         if bid == "generate-btn":
             self._trigger_generate()
+        elif bid == "dictate-btn":
+            self.action_toggle_recording()
         elif bid == "profile-btn":
             self.app.push_screen(ProfileScreen())
         elif bid == "debug-btn":
@@ -916,6 +1143,12 @@ class DashboardScreen(Screen):
 
     def _add_course(self, course: Course) -> None:
         COURSES.append(course)
+        save_error = None
+        try:
+            save_courses(COURSES)
+        except OSError as exc:
+            save_error = exc
+
         wrap = self.query_one("#courses-wrap")
         i = len(COURSES) - 1
         wrap.mount(
@@ -925,7 +1158,227 @@ class DashboardScreen(Screen):
                 classes="course-card",
             )
         )
-        self._set_status(f"Course '{course.title}' generated successfully!")
+        if save_error:
+            self._set_status(
+                f"Course '{course.title}' generated, but saving failed: {save_error}"
+            )
+        else:
+            self._set_status(f"Course '{course.title}' generated and saved.")
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Break & Water reminder screens
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+class BreakScheduleScreen(Screen):
+    """Modal to set study/break/water durations at the start of a course."""
+
+    CSS = """
+    #schedule-modal {
+        width: 60;
+        height: 20;
+        border: round $primary;
+        background: $panel;
+        align: center middle;
+    }
+    #schedule-modal Vertical {
+        align: center middle;
+    }
+    #schedule-title {
+        text-style: bold;
+        color: $text;
+        margin-bottom: 1;
+        width: 100%;
+        text-align: center;
+    }
+    #schedule-inputs {
+        width: 100%;
+        margin-bottom: 1;
+    }
+    .schedule-input-row {
+        height: 3;
+        margin-bottom: 1;
+        align: center middle;
+    }
+    .schedule-label {
+        width: 12;
+        color: $text;
+    }
+    Input {
+        width: 10;
+        margin-right: 1;
+    }
+    #schedule-buttons {
+        height: 3;
+        align: center middle;
+        width: 100%;
+    }
+    Button {
+        margin-right: 1;
+    }
+    """
+
+    def __init__(self, course_screen: "CourseScreen") -> None:
+        super().__init__()
+        self.course_screen = course_screen
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="schedule-modal"):
+            yield Static("Study Schedule", id="schedule-title")
+            with Vertical(id="schedule-inputs"):
+                with Horizontal(classes="schedule-input-row"):
+                    yield Static("Study (min):", classes="schedule-label")
+                    yield Input(
+                        str(self.course_screen.study_minutes),
+                        id="schedule-study",
+                    )
+                with Horizontal(classes="schedule-input-row"):
+                    yield Static("Break (min):", classes="schedule-label")
+                    yield Input(
+                        str(self.course_screen.break_minutes),
+                        id="schedule-break",
+                    )
+                with Horizontal(classes="schedule-input-row"):
+                    yield Static("Water (min):", classes="schedule-label")
+                    yield Input(
+                        str(self.course_screen.water_minutes),
+                        id="schedule-water",
+                    )
+            with Horizontal(id="schedule-buttons"):
+                yield Button("Start", id="schedule-start")
+                yield Button("Cancel", id="schedule-cancel")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        bid = event.button.id or ""
+        if bid == "schedule-start":
+            self._apply_and_start()
+        elif bid == "schedule-cancel":
+            self.app.pop_screen()
+
+    def _apply_and_start(self) -> None:
+        try:
+            self.course_screen.study_minutes = int(
+                self.query_one("#schedule-study", Input).value or "25"
+            )
+            self.course_screen.break_minutes = int(
+                self.query_one("#schedule-break", Input).value or "5"
+            )
+            self.course_screen.water_minutes = int(
+                self.query_one("#schedule-water", Input).value or "15"
+            )
+        except ValueError:
+            self.course_screen.study_minutes = 25
+            self.course_screen.break_minutes = 5
+            self.course_screen.water_minutes = 15
+
+        self.course_screen._start_session()
+        self.app.pop_screen()
+
+
+class BreakTimeScreen(Screen):
+    """Popup when break time starts."""
+
+    CSS = """
+    #break-modal {
+        width: 50;
+        height: 16;
+        border: round $accent;
+        background: $panel;
+        align: center middle;
+    }
+    #break-modal Vertical {
+        align: center middle;
+    }
+    #break-title {
+        text-style: bold;
+        color: $accent;
+        margin-bottom: 1;
+        width: 100%;
+        text-align: center;
+        height: 3;
+    }
+    #break-message {
+        color: $text;
+        width: 100%;
+        text-align: center;
+        margin-bottom: 2;
+        height: 3;
+    }
+    #break-buttons {
+        height: 3;
+        align: center middle;
+    }
+    Button {
+        margin-right: 1;
+    }
+    """
+
+    def __init__(self, break_minutes: int) -> None:
+        super().__init__()
+        self.break_minutes = break_minutes
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="break-modal"):
+            yield Static("☕ BREAK TIME ☕", id="break-title")
+            yield Static(
+                f"Take a {self.break_minutes}-minute break and relax!",
+                id="break-message",
+            )
+            with Horizontal(id="break-buttons"):
+                yield Button("Got it!", id="break-dismiss")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        self.app.pop_screen()
+
+
+class WaterReminderScreen(Screen):
+    """Popup for water reminder."""
+
+    CSS = """
+    #water-modal {
+        width: 50;
+        height: 14;
+        border: round $primary;
+        background: $panel;
+        align: center middle;
+    }
+    #water-modal Vertical {
+        align: center middle;
+    }
+    #water-title {
+        text-style: bold;
+        color: $primary;
+        margin-bottom: 1;
+        width: 100%;
+        text-align: center;
+        height: 3;
+    }
+    #water-message {
+        color: $text;
+        width: 100%;
+        text-align: center;
+        margin-bottom: 2;
+        height: 2;
+    }
+    #water-buttons {
+        height: 3;
+        align: center middle;
+    }
+    Button {
+        margin-right: 1;
+    }
+    """
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="water-modal"):
+            yield Static("💧 HYDRATION REMINDER 💧", id="water-title")
+            yield Static("Time to take a sip of water!", id="water-message")
+            with Horizontal(id="water-buttons"):
+                yield Button("Thanks!", id="water-dismiss")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        self.app.pop_screen()
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -938,7 +1391,9 @@ class CourseScreen(Screen):
         Binding("escape", "app.pop_screen", "Back"),
         Binding("left", "prev_section", "Previous"),
         Binding("right", "next_section", "Next"),
+        Binding("space", "toggle_session", "Pause/Resume"),
         Binding("p", "practice", "Practice"),
+        Binding("ctrl+m", "toggle_recording", "Record"),
         Binding("q", "quit", "Quit"),
     ]
 
@@ -947,8 +1402,21 @@ class CourseScreen(Screen):
         self.course = course
         self.flat = course.flat_sections()
         self.cursor = 0
+        self.q_is_recording = False
+        self.q_recording_stop_event: threading.Event | None = None
         self.user_state: dict = {}
         self.section_started_at = time.monotonic()
+        self.session_active = False
+        self.session_paused = False
+        self.session_mode = "study"
+        self.study_minutes = 25
+        self.break_minutes = 5
+        self.water_minutes = 15
+        self.study_remaining_seconds = self.study_minutes * 60
+        self.break_remaining_seconds = self.break_minutes * 60
+        self.water_remaining_seconds = self.water_minutes * 60
+        self._session_clock = None
+        self._schedule_shown = False
 
     def compose(self) -> ComposeResult:
         yield NavBar(active="DDQ Animation")
@@ -1001,13 +1469,66 @@ class CourseScreen(Screen):
                     yield Button("Practice Block", id="practice-btn")
                     yield Button("Next Section →", id="next-btn", classes="nav-btn")
                 yield Static("", id="nav-hint")
+                with Horizontal():
+                    yield Input(
+                        placeholder="Ask a question about this section...",
+                        id="course-question-input",
+                    )
+                    yield Button("Ask 🎤", id="ask-btn")
+                    yield Button("Dictate", id="dictate-ask-btn")
 
-        yield Static("← / → navigate · Esc back · q quit", id="status")
+        yield Static("← / → navigate · ⌃M dictate · Esc back · q quit", id="status")
         yield Footer()
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        if event.input.id == "course-question-input":
+            self._ask_question()
+
+    def _start_question_recording(self) -> None:
+        self.q_is_recording = True
+        self.q_recording_stop_event = threading.Event()
+        self._set_status("🎤 Recording question... speak now (stops if silent for 5s or press Ctrl+M)")
+        self.record_question_from_voice_ptt()
+
+    def _stop_question_recording(self) -> None:
+        if self.q_recording_stop_event:
+            self.q_recording_stop_event.set()
+            self._set_status("⏸ Transcribing question...")
+
+    @work(thread=True)
+    def record_question_from_voice_ptt(self) -> None:
+        try:
+            if self.q_recording_stop_event is None:
+                raise RuntimeError("Recording not initialized.")
+            transcript = transcribe_speech_ptt(self.q_recording_stop_event)
+            if not transcript:
+                raise RuntimeError("No speech was detected.")
+            self.app.call_from_thread(self._apply_dictated_question, transcript)
+        except Exception as exc:
+            self.app.call_from_thread(self._set_status, f"Recording failed: {exc}")
+        finally:
+            self.q_is_recording = False
+            self.q_recording_stop_event = None
+
+    def _apply_dictated_question(self, transcript: str) -> None:
+        q_input = self.query_one("#course-question-input", Input)
+        q_input.value = transcript
+        q_input.focus()
+        self._set_status("✓ Question ready. Press Enter or Ask to submit.")
+
+    def action_toggle_recording(self) -> None:
+        if not self.q_is_recording:
+            self._start_question_recording()
+        else:
+            self._stop_question_recording()
 
     def on_mount(self) -> None:
         self._render_section()
         self.fetch_user_state()
+        self._session_clock = self.set_interval(1, self._tick_session)
+        if not self._schedule_shown:
+            self._schedule_shown = True
+            self.app.push_screen(BreakScheduleScreen(self))
 
     def action_prev_section(self) -> None:
         if self.cursor > 0:
@@ -1022,6 +1543,15 @@ class CourseScreen(Screen):
             self.cursor += 1
             self.section_started_at = time.monotonic()
             self._render_section()
+
+    def action_toggle_session(self) -> None:
+        if not self.session_active:
+            self._start_session()
+            return
+        if self.session_paused:
+            self._resume_session()
+        else:
+            self._pause_session()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         bid = event.button.id or ""
@@ -1039,6 +1569,10 @@ class CourseScreen(Screen):
             self.fetch_quiz(sec)
         elif bid == "practice-btn":
             self.action_practice()
+        elif bid == "ask-btn":
+            self._ask_question()
+        elif bid == "dictate-ask-btn":
+            self.action_toggle_recording()
         elif bid.startswith("sec-"):
             self._record_section_progress(completed=False)
             self.cursor = int(bid.split("-")[1])
@@ -1050,13 +1584,45 @@ class CourseScreen(Screen):
             self._set_status("Practice blocks are available for coding courses.")
             return
 
-        sec = self.flat[self.cursor][2]
-        if sec.challenge:
-            self.app.push_screen(ChallengeScreen(sec, sec.challenge))
+    def _ask_question(self) -> None:
+        question_input = self.query_one("#course-question-input", Input)
+        question = question_input.value.strip()
+        if not question:
+            self._set_status("Type a question first.")
             return
+        self._set_status("Asking question... please wait")
+        self.ask_ai_question(question)
+        question_input.value = ""
 
-        self._set_status(f"Generating AI practice block for: {sec.title} ...")
-        self.fetch_challenge(sec)
+    @work(thread=True)
+    def ask_ai_question(self, question: str) -> None:
+        sec = self.flat[self.cursor][2]
+        try:
+            context = f"Course: {self.course.title}\nSection: {sec.title}\nContent: {sec.body}\n\nQuestion: {question}"
+            req = request.Request(
+                "http://127.0.0.1:8000/api/ai/qa",
+                data=json.dumps({"prompt": context}).encode("utf-8"),
+                headers={"Content-Type": "application/json"},
+            )
+            with request.urlopen(req) as response:
+                data = json.loads(response.read().decode("utf-8"))
+            
+            answer = data.get("response", "I couldn't find an answer.")
+            self.app.call_from_thread(self._display_and_speak_answer, answer)
+        except Exception as exc:
+            self.app.call_from_thread(self._set_status, f"Error: {str(exc)}")
+
+    def _display_and_speak_answer(self, answer: str) -> None:
+        self._set_status(f"Answer: {answer[:100]}...")
+        self.speak_answer_thread(answer)
+
+    @work(thread=True)
+    def speak_answer_thread(self, answer: str) -> None:
+        try:
+            speak_text(answer)
+        except Exception as exc:
+            self.app.call_from_thread(self._set_status, f"TTS error: {str(exc)}")
+
 
     @work(thread=True)
     def fetch_challenge(self, sec: Section) -> None:
@@ -1079,6 +1645,10 @@ class CourseScreen(Screen):
                 data = json.loads(response.read().decode("utf-8"))
             challenge = self._normalize_ai_challenge(data.get("response"), fallback)
             sec.challenge = challenge
+            try:
+                save_courses(COURSES)
+            except OSError:
+                pass
             self.app.call_from_thread(self._open_challenge, sec, challenge, True)
         except Exception:
             self.app.call_from_thread(self._open_challenge, sec, fallback, False)
@@ -1163,6 +1733,64 @@ class CourseScreen(Screen):
         self.user_state = state
         self._update_adaptive_panel()
 
+    def _start_session(self) -> None:
+        self.session_active = True
+        self.session_paused = False
+        self.session_mode = "study"
+        self.study_remaining_seconds = self.study_minutes * 60
+        self.break_remaining_seconds = self.break_minutes * 60
+        self.water_remaining_seconds = self.water_minutes * 60
+        self._update_status_with_timer()
+
+    def _pause_session(self) -> None:
+        if not self.session_active:
+            return
+        self.session_paused = True
+        self._update_status_with_timer()
+
+    def _resume_session(self) -> None:
+        if not self.session_active:
+            self._start_session()
+            return
+        self.session_paused = False
+        self._update_status_with_timer()
+
+    def _reset_session(self) -> None:
+        self.session_active = False
+        self.session_paused = False
+        self.session_mode = "study"
+        self.study_remaining_seconds = self.study_minutes * 60
+        self.break_remaining_seconds = self.break_minutes * 60
+        self.water_remaining_seconds = self.water_minutes * 60
+        self._set_status("Session reset.")
+
+    def _tick_session(self) -> None:
+        if not self.session_active or self.session_paused:
+            return
+
+        if self.session_mode == "study":
+            self.study_remaining_seconds -= 1
+            self.water_remaining_seconds -= 1
+            if self.water_remaining_seconds <= 0 and self.water_minutes > 0:
+                self.water_remaining_seconds = self.water_minutes * 60
+                self.app.push_screen(WaterReminderScreen())
+            if self.study_remaining_seconds <= 0:
+                if self.break_minutes > 0:
+                    self.session_mode = "break"
+                    self.break_remaining_seconds = self.break_minutes * 60
+                    self.app.push_screen(BreakTimeScreen(self.break_minutes))
+                else:
+                    self.study_remaining_seconds = self.study_minutes * 60
+                    self.water_remaining_seconds = self.water_minutes * 60
+        else:
+            self.break_remaining_seconds -= 1
+            if self.break_remaining_seconds <= 0:
+                self.session_mode = "study"
+                self.study_remaining_seconds = self.study_minutes * 60
+                self.water_remaining_seconds = self.water_minutes * 60
+
+        self._update_status_with_timer()
+
     @work(thread=True)
     def fetch_quiz(self, sec: Section) -> None:
         try:
@@ -1243,6 +1871,22 @@ class CourseScreen(Screen):
 
     def _set_status(self, text: str) -> None:
         self.query_one("#status", Static).update(text)
+
+    def _update_status_with_timer(self) -> None:
+        if not self.session_active:
+            return
+        mode = "Study" if self.session_mode == "study" else "Break"
+        remaining = (
+            self.study_remaining_seconds
+            if self.session_mode == "study"
+            else self.break_remaining_seconds
+        )
+        minutes, seconds = divmod(remaining, 60)
+        pause_indicator = " [PAUSED]" if self.session_paused else ""
+        time_display = f"{mode} {minutes:02d}:{seconds:02d}{pause_indicator}"
+        self.query_one("#status", Static).update(
+            f"{time_display} · ← / → navigate · Space pause · Esc back · q quit"
+        )
 
     def _update_adaptive_panel(self) -> None:
         _, _, sec = self.flat[self.cursor]
@@ -1844,10 +2488,10 @@ class ProfileScreen(Screen):
         if recommendations:
             rec_text = Text()
             for i, rec in enumerate(recommendations[:3], 1):
-                rec_text.append(f"  {i}. ", style="bold $primary")
+                rec_text.append(f"  {i}. ", style="bold cyan")
                 rec_text.append(f"{rec}\n", style="white")
             if adaptive_hint:
-                rec_text.append(f"\n  💡 {adaptive_hint}", style="bold $accent")
+                rec_text.append(f"\n  💡 {adaptive_hint}", style="bold magenta")
             self.query_one("#profile-recommendations-content", Static).update(rec_text)
         else:
             self.query_one("#profile-recommendations-content", Static).update(
@@ -1868,6 +2512,29 @@ class GyftTUI(App):
 
     def on_mount(self) -> None:
         self.push_screen(DashboardScreen())
+
+    def on_blur(self) -> None:
+        """Send buzz request when user stops focusing on the app."""
+        self._send_buzz_request()
+
+    def _send_buzz_request(self) -> None:
+        """Send a POST request to /hardware/buzz with the number of modals."""
+        # try:
+        #     # Calculate number of modals: screen_stack length - 1 (base dashboard)
+        #     num_modals = len(self.screen_stack) - 1
+            
+        #     payload = json.dumps({"seconds": num_modals})
+        #     req = request.Request(
+        #         "http://127.0.0.1:8000/hardware/buzz",
+        #         data=payload.encode("utf-8"),
+        #         headers={"Content-Type": "application/json"},
+        #         method="POST",
+        #     )
+        #     with request.urlopen(req) as response:
+        #         response.read()
+        # except Exception as e:
+        #     # Silently fail if the request doesn't go through
+        #     pass
 
 
 if __name__ == "__main__":

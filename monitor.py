@@ -1,102 +1,34 @@
 """
-monitor.py — list running processes + (best-effort) foreground app.
- 
+monitor.py — list running processes and run a focus guard.
+
 Run:
-    pip install psutil
-    python monitor.py
- 
+    uv run python monitor.py
+
 Optional flags:
-    python monitor.py --top 20        # show top 20 by CPU instead of 30
-    python monitor.py --watch         # refresh every 2 seconds
-    python monitor.py --filter chrome # only show processes matching 'chrome'
+    uv run python monitor.py --top 20
+    uv run python monitor.py --watch
+    uv run python monitor.py --filter chrome
+    uv run python monitor.py --focus
+    uv run python monitor.py --focus --popup
 """
- 
+
 from __future__ import annotations
- 
+
 import argparse
 import os
 import subprocess
 import sys
 import time
-from typing import Optional
-
-import re
 from dataclasses import dataclass
-from typing import Literal
- 
+from typing import Literal, Optional
+
 import psutil
- 
+
+from classify import ANSI, Classification, classify, colored_badge
+
 Category = Literal["productive", "neutral", "distraction", "unknown"]
 
 
-SHORT_KEYWORDS = {"x", "vim", "git", "node", "make", "code", "word",
-                  "ea desktop"}
-
-DISTRACTION = [
-    # Social / chat
-    "discord", "slack", "telegram", "whatsapp", "imessage",
-    "signal", "messenger", "wechat",
-    # Video / streaming
-    "netflix", "spotify", "music", "vlc", "iina", "quicktime player",
-    "youtube",
-    # Games & launchers
-    "steam", "epicgameslauncher", "battle.net", "riot", "leagueclient",
-    "valorant", "minecraft", "roblox", "ea desktop", "gog galaxy",
-    # Social media native apps
-    "twitter", "instagram", "tiktok", "reddit", "facebook",
-    # Generic entertainment
-    "twitch", "obs",
-]
-
-PRODUCTIVE = [
-    # Editors / IDEs
-    "code", "vscode", "cursor", "pycharm", "intellij", "clion", "rustrover",
-    "goland", "webstorm", "phpstorm", "rider", "datagrip", "android studio",
-    "xcode", "sublime text", "atom", "neovim", "nvim", "vim", "emacs",
-    "zed", "helix",
-    # Terminals / shells
-    "terminal", "iterm", "iterm2", "wezterm", "alacritty", "kitty",
-    "warp", "hyper", "tabby",
-    # Engineering tooling
-    "altium", "kicad", "ltspice", "vivado", "quartus", "matlab", "simulink",
-    "fusion 360", "fusion360", "solidworks", "autocad", "ansys",
-    # Writing / docs / research
-    "obsidian", "notion", "logseq", "zotero", "mendeley", "papers",
-    "scrivener", "ulysses", "typora", "marktext",
-    # Office
-    "microsoft word", "microsoft excel", "powerpoint", "keynote",
-    "libreoffice", "soffice",
-    # Dev tools
-    "docker", "postman", "insomnia", "tableplus", "dbeaver", "tableau",
-    "rstudio", "jupyter", "anaconda", "github desktop", "sourcetree",
-    "git", "gitkraken",
-    # Build / compile
-    "cargo", "rustc", "gcc", "clang", "make", "cmake", "ninja",
-    "javac", "node", "npm", "pnpm", "yarn", "tsc", "webpack",
-]
-
-NEUTRAL = [
-    # Browsers
-    "chrome", "google chrome", "safari", "firefox", "arc", "brave",
-    "edge", "microsoft edge", "vivaldi", "opera",
-    # Email / calendar
-    "mail", "outlook", "thunderbird", "spark", "airmail",
-    "calendar", "fantastical",
-    # Video calls
-    "zoom", "teams", "microsoft teams", "google meet", "webex", "facetime",
-    # System / utilities
-    "finder", "explorer", "system preferences", "system settings",
-    "activity monitor", "task manager",
-    # File sync
-    "dropbox", "onedrive", "google drive", "icloud",
-    # Password / security
-    "1password", "bitwarden", "lastpass",
-    # PDF / image viewers
-    "preview", "acrobat", "adobe acrobat", "skim",
-]
-
-
- 
 # ── Foreground window detection ─────────────────────────────────────────────
 # psutil doesn't know about UI focus. We shell out per-platform for that.
  
@@ -173,8 +105,344 @@ def collect_processes(name_filter: str | None = None) -> list[dict]:
  
     rows.sort(key=lambda r: r["cpu"], reverse=True)
     return rows
- 
- 
+
+
+# ── Browser tab detection ───────────────────────────────────────────────────
+
+@dataclass
+class BrowserTab:
+    browser: str
+    title: str
+    url: str
+    active: bool = False
+
+    @property
+    def label(self) -> str:
+        if self.url:
+            return f"{self.title} {self.url}".strip()
+        return self.title
+
+
+CHROMIUM_BROWSERS = (
+    "Google Chrome",
+    "Brave Browser",
+    "Microsoft Edge",
+    "Arc",
+    "Vivaldi",
+    "Opera",
+)
+
+
+def _run_osascript(script: str) -> str:
+    result = subprocess.run(
+        ["osascript", "-e", script],
+        capture_output=True,
+        text=True,
+        timeout=4,
+    )
+    if result.returncode != 0:
+        return ""
+    return result.stdout.strip()
+
+
+def _applescript_quote(value: str) -> str:
+    return '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
+def _app_is_running(app_name: str) -> bool:
+    if sys.platform != "darwin":
+        return False
+
+    script = (
+        'tell application "System Events" to '
+        f'(name of processes) contains "{app_name}"'
+    )
+    return _run_osascript(script).lower() == "true"
+
+
+def _split_tab_rows(output: str, browser: str, active_index: int | None = None) -> list[BrowserTab]:
+    tabs: list[BrowserTab] = []
+    for index, line in enumerate(output.splitlines(), start=1):
+        parts = line.split("\t", 1)
+        title = parts[0].strip() if parts else ""
+        url = parts[1].strip() if len(parts) > 1 else ""
+        if title or url:
+            tabs.append(
+                BrowserTab(
+                    browser=browser,
+                    title=title or "(untitled)",
+                    url=url,
+                    active=active_index == index,
+                )
+            )
+    return tabs
+
+
+def collect_browser_tabs() -> list[BrowserTab]:
+    """Best-effort browser tab snapshot. Currently supports macOS browsers."""
+    if sys.platform != "darwin":
+        return []
+
+    tabs: list[BrowserTab] = []
+
+    if _app_is_running("Safari"):
+        script = """
+tell application "Safari"
+    set tabRows to {}
+    repeat with w in windows
+        repeat with t in tabs of w
+            set end of tabRows to (name of t) & tab & (URL of t)
+        end repeat
+    end repeat
+    set AppleScript's text item delimiters to linefeed
+    return tabRows as text
+end tell
+""".strip()
+        tabs.extend(_split_tab_rows(_run_osascript(script), "Safari"))
+
+    for browser in CHROMIUM_BROWSERS:
+        if not _app_is_running(browser):
+            continue
+        script = f"""
+tell application "{browser}"
+    set tabRows to {{}}
+    repeat with w in windows
+        repeat with t in tabs of w
+            set end of tabRows to (title of t) & tab & (URL of t)
+        end repeat
+    end repeat
+    set AppleScript's text item delimiters to linefeed
+    return tabRows as text
+end tell
+""".strip()
+        active_script = f'tell application "{browser}" to return active tab index of front window'
+        active_index_text = _run_osascript(active_script)
+        active_index = int(active_index_text) if active_index_text.isdigit() else None
+        tabs.extend(_split_tab_rows(_run_osascript(script), browser, active_index))
+
+    return tabs
+
+
+# ── Focus guard ─────────────────────────────────────────────────────────────
+
+@dataclass
+class Distraction:
+    source: str
+    name: str
+    rule: str | None = None
+    active: bool = False
+
+    def describe(self) -> str:
+        active = "active " if self.active else ""
+        rule = f" via {self.rule!r}" if self.rule else ""
+        return f"{active}{self.source}: {self.name}{rule}"
+
+
+@dataclass
+class FocusSnapshot:
+    foreground: str | None
+    foreground_classification: Classification
+    distractions: list[Distraction]
+
+    @property
+    def is_distracted(self) -> bool:
+        return bool(self.distractions)
+
+    @property
+    def is_working(self) -> bool:
+        return (
+            not self.distractions
+            and self.foreground_classification.category == "productive"
+        )
+
+
+def inspect_focus_state(check_tabs: bool = True) -> FocusSnapshot:
+    foreground = get_foreground_app()
+    foreground_classification = classify(foreground or "")
+    distractions: list[Distraction] = []
+
+    for row in collect_processes():
+        classification = classify(row["name"])
+        if classification.category == "distraction":
+            distractions.append(
+                Distraction(
+                    source="process",
+                    name=f"{row['name']} (pid {row['pid']})",
+                    rule=classification.matched_rule,
+                    active=foreground and row["name"].lower() == foreground.lower(),
+                )
+            )
+
+    if check_tabs:
+        for tab in collect_browser_tabs():
+            classification = classify(tab.label)
+            if classification.category == "distraction":
+                distractions.append(
+                    Distraction(
+                        source=f"{tab.browser} tab",
+                        name=tab.title,
+                        rule=classification.matched_rule,
+                        active=tab.active,
+                    )
+                )
+
+    return FocusSnapshot(
+        foreground=foreground,
+        foreground_classification=foreground_classification,
+        distractions=distractions,
+    )
+
+
+def show_focus_popup(message: str, timeout_seconds: int) -> bool:
+    """Return True when the popup was ignored instead of acknowledged."""
+    if sys.platform != "darwin":
+        return False
+
+    script = "\n".join(
+        [
+            "display dialog "
+            + _applescript_quote(message)
+            + " with title "
+            + _applescript_quote("Eureka focus guard")
+            + " buttons {"
+            + _applescript_quote("Back to work")
+            + "} default button "
+            + _applescript_quote("Back to work")
+            + " giving up after "
+            + str(timeout_seconds),
+            "return result as text",
+        ]
+    )
+
+    try:
+        result = subprocess.run(
+            ["osascript", "-e", script],
+            capture_output=True,
+            text=True,
+            timeout=timeout_seconds + 2,
+        )
+    except subprocess.TimeoutExpired:
+        return True
+
+    if result.returncode != 0:
+        return True
+    return "gave up:true" in result.stdout.replace(" ", "").lower()
+
+
+def notify(
+    message: str,
+    use_notification: bool,
+    use_popup: bool,
+    popup_timeout_seconds: int,
+) -> bool:
+    """Notify the user. Return True if an interactive popup was ignored."""
+    print("\a", end="", flush=True)
+    print(f"{ANSI['distraction']}{ANSI['bold']}FOCUS:{ANSI['reset']} {message}")
+
+    if use_popup:
+        ignored = show_focus_popup(message, popup_timeout_seconds)
+        if ignored:
+            print(
+                f"{ANSI['distraction']}Popup ignored; hydra mode will escalate.{ANSI['reset']}"
+            )
+        return ignored
+
+    if use_notification and sys.platform == "darwin":
+        subprocess.run(
+            [
+                "osascript",
+                "-e",
+                "display notification "
+                + _applescript_quote(message)
+                + " with title "
+                + _applescript_quote("Eureka focus guard"),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=2,
+        )
+    return False
+
+
+def print_focus_summary(snapshot: FocusSnapshot, max_items: int = 8) -> None:
+    fg = snapshot.foreground or "(unknown)"
+    fg_badge = colored_badge(snapshot.foreground_classification.category)
+    print(f"Foreground: {fg} {fg_badge}")
+
+    if snapshot.is_working:
+        print(f"{ANSI['productive']}Working. Nice, keep going.{ANSI['reset']}")
+        return
+
+    if not snapshot.distractions:
+        print("No known distractions open, but foreground is not classified as productive.")
+        return
+
+    print(f"{ANSI['distraction']}Distractions detected:{ANSI['reset']}")
+    for item in snapshot.distractions[:max_items]:
+        print(f"  - {item.describe()}")
+    remaining = len(snapshot.distractions) - max_items
+    if remaining > 0:
+        print(f"  ... and {remaining} more")
+
+
+def run_focus_guard(
+    interval_seconds: float,
+    annoy_seconds: float,
+    check_tabs: bool,
+    use_notification: bool,
+    use_popup: bool,
+    popup_timeout_seconds: int,
+    max_popups: int,
+) -> None:
+    print("Focus guard started. Ctrl+C stops it.")
+    next_annoy_at = 0.0
+    was_distracted = False
+    popup_count = 1
+
+    try:
+        while True:
+            snapshot = inspect_focus_state(check_tabs=check_tabs)
+            now = time.monotonic()
+
+            if snapshot.is_distracted:
+                if now >= next_annoy_at:
+                    top_reason = snapshot.distractions[0].describe()
+                    ignored_count = 0
+                    for popup_index in range(popup_count):
+                        prefix = ""
+                        if use_popup and popup_count > 1:
+                            prefix = f"[{popup_index + 1}/{popup_count}] "
+                        ignored = notify(
+                            f"{prefix}Back to work. {top_reason}",
+                            use_notification,
+                            use_popup,
+                            popup_timeout_seconds,
+                        )
+                        if ignored:
+                            ignored_count += 1
+
+                    snapshot = inspect_focus_state(check_tabs=check_tabs)
+                    still_distracted = snapshot.is_distracted
+                    if use_popup and ignored_count and still_distracted:
+                        popup_count = min(max_popups, popup_count * 2)
+                        next_annoy_at = now
+                    else:
+                        popup_count = 1
+                        next_annoy_at = now + annoy_seconds
+                    print_focus_summary(snapshot)
+                was_distracted = True
+            else:
+                if was_distracted:
+                    print(f"{ANSI['productive']}Recovered. Distractions cleared.{ANSI['reset']}")
+                was_distracted = False
+                next_annoy_at = now
+                popup_count = 1
+
+            time.sleep(interval_seconds)
+    except KeyboardInterrupt:
+        print("\nstopped.")
+
+
 # ── Rendering ───────────────────────────────────────────────────────────────
  
 def print_report(top: int, name_filter: str | None) -> None:
@@ -191,9 +459,9 @@ def print_report(top: int, name_filter: str | None) -> None:
     print("─" * 78)
  
     for r in rows[:top]:
-        rClassified = classify(r['name'])
-    
-        print(f"  {r['pid']:>7}  {r['cpu']:>6.1f}  {r['mem']:>6.1f}  {r['name']} {colored_badge(rClassified.category)}")
+        classified = classify(r["name"])
+
+        print(f"  {r['pid']:>7}  {r['cpu']:>6.1f}  {r['mem']:>6.1f}  {r['name']} {colored_badge(classified.category)}")
  
     if len(rows) > top:
         print(f"  … and {len(rows) - top} more (use --top N to show more)")
@@ -204,63 +472,6 @@ def clear_screen() -> None:
     os.system("cls" if sys.platform == "win32" else "clear")
 
 
-@dataclass
-class Classification:
-    category: Category
-    matched_rule: str | None
-
-
-def _matches(name_lower: str, rule: str) -> bool:
-    """Check if rule matches name. Use word boundaries for short rules."""
-    if len(rule) <= 4 or rule in SHORT_KEYWORDS:
-        # \b word boundary. re.escape handles dots, hyphens, etc.
-        pattern = r"\b" + re.escape(rule) + r"\b"
-        return re.search(pattern, name_lower) is not None
-    return rule in name_lower
-
-
-def classify(name: str) -> Classification:
-    """Categorize a process by its name."""
-    if not name:
-        return Classification("unknown", None)
-
-    n = name.lower()
-
-    for rule in DISTRACTION:
-        if _matches(n, rule):
-            return Classification("distraction", rule)
-
-    for rule in PRODUCTIVE:
-        if _matches(n, rule):
-            return Classification("productive", rule)
-
-    for rule in NEUTRAL:
-        if _matches(n, rule):
-            return Classification("neutral", rule)
-
-    return Classification("unknown", None)
-
-ANSI = {
-    "productive":  "\033[32m",   # green
-    "neutral":     "\033[36m",   # cyan
-    "distraction": "\033[31m",   # red
-    "unknown":     "\033[90m",   # bright black / gray
-    "reset":       "\033[0m",
-    "bold":        "\033[1m",
-}
-
-BADGE = {
-    "productive":  "PROD",
-    "neutral":     "NEUT",
-    "distraction": "DIST",
-    "unknown":     "  ? ",
-}
-
-
-def colored_badge(category: Category) -> str:
-    return f"{ANSI[category]}{BADGE[category]}{ANSI['reset']}"
- 
- 
 # ── Entry ───────────────────────────────────────────────────────────────────
  
 def main() -> None:
@@ -271,7 +482,35 @@ def main() -> None:
                     help="Refresh every 2 seconds until Ctrl+C.")
     ap.add_argument("--filter", default=None,
                     help="Only show processes whose name contains this string.")
+    ap.add_argument("--focus", action="store_true",
+                    help="Annoy you while distracting processes or browser tabs are open.")
+    ap.add_argument("--interval", type=float, default=5.0,
+                    help="Seconds between focus checks (default 5).")
+    ap.add_argument("--annoy-every", type=float, default=15.0,
+                    help="Seconds between nags while distracted (default 15).")
+    ap.add_argument("--no-browser-tabs", action="store_true",
+                    help="Skip browser tab inspection.")
+    ap.add_argument("--notify", action="store_true",
+                    help="Use desktop notifications in addition to terminal bells.")
+    ap.add_argument("--popup", action="store_true",
+                    help="Use macOS dialogs that can detect ignored prompts and hydra-escalate.")
+    ap.add_argument("--popup-timeout", type=int, default=8,
+                    help="Seconds before a popup counts as ignored (default 8).")
+    ap.add_argument("--max-popups", type=int, default=8,
+                    help="Maximum hydra popups per nag cycle (default 8).")
     args = ap.parse_args()
+
+    if args.focus:
+        run_focus_guard(
+            interval_seconds=max(1.0, args.interval),
+            annoy_seconds=max(1.0, args.annoy_every),
+            check_tabs=not args.no_browser_tabs,
+            use_notification=args.notify,
+            use_popup=args.popup,
+            popup_timeout_seconds=max(1, args.popup_timeout),
+            max_popups=max(1, args.max_popups),
+        )
+        return
  
     if not args.watch:
         print_report(args.top, args.filter)

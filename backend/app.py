@@ -69,6 +69,7 @@ def index():
             "/run-code",
             "/update-progress",
             "/user-state",
+            "/hardware/buzz",
         ],
     })
 
@@ -205,8 +206,7 @@ def generate_challenge():
         response = generate_challenge_response(
             title=title or topic,
             body=body,
-            code=code,
-            language=language,
+            code=code,            language=language,
             learning_context=ai_learning_context(user_id, topic),
         )
         return jsonify({"response": _parse_ai_json(response)}), 200
@@ -249,6 +249,24 @@ def update_user_progress():
 def user_state():
     user_id = request.args.get("user_id") or DEFAULT_USER_ID
     return jsonify(get_user_state(user_id)), 200
+
+
+@app.post("/hardware/buzz")
+def hardware_buzz():
+    """Send a buzz signal when user loses focus. 
+    
+    Expects JSON payload with 'seconds' parameter (number of modals).
+    """
+    data = _json_payload()
+    seconds = int(data.get("seconds") or 0)
+    
+    # TODO: Implement actual hardware buzzer control here
+    # For now, just acknowledge the request
+    return jsonify({
+        "ok": True,
+        "message": f"Buzz signal received - {seconds} modal(s) active",
+        "seconds": seconds
+    }), 200
 
 
 if __name__ == "__main__":

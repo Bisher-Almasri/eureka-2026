@@ -23,70 +23,192 @@ Category = Literal["productive", "neutral", "distraction", "unknown"]
 # Rules <= 4 chars or in SHORT_KEYWORDS get word-boundary matching to avoid
 # matching inside unrelated process names (e.g. 'x' inside 'kworker/R-xfs').
 
-SHORT_KEYWORDS = {"x", "vim", "git", "node", "make", "code", "word",
-                  "ea desktop"}
+SHORT_KEYWORDS = {"x", "vim", "git", "node", "make", "code", "word", "ea desktop"}
 
 DISTRACTION = [
     # Social / chat
-    "discord", "slack", "telegram", "whatsapp", "imessage",
-    "signal", "messenger", "wechat",
+    "discord",
+    "slack",
+    "telegram",
+    "whatsapp",
+    "imessage",
+    "signal",
+    "messenger",
+    "wechat",
     # Video / streaming
-    "netflix", "spotify", "music", "vlc", "iina", "quicktime player",
+    "netflix",
     "youtube",
     # Games & launchers
-    "steam", "epicgameslauncher", "battle.net", "riot", "leagueclient",
-    "valorant", "minecraft", "roblox", "ea desktop", "gog galaxy",
+    "steam",
+    "epicgameslauncher",
+    "battle.net",
+    "riot",
+    "leagueclient",
+    "valorant",
+    "minecraft",
+    "roblox",
+    "ea desktop",
+    "gog galaxy",
     # Social media native apps
-    "twitter", "instagram", "tiktok", "reddit", "facebook",
+    "twitter",
+    "instagram",
+    "tiktok",
+    "reddit",
+    "facebook",
     # Generic entertainment
-    "twitch", "obs",
+    "twitch",
+    "obs",
 ]
 
 PRODUCTIVE = [
     # Editors / IDEs
-    "code", "vscode", "cursor", "pycharm", "intellij", "clion", "rustrover",
-    "goland", "webstorm", "phpstorm", "rider", "datagrip", "android studio",
-    "xcode", "sublime text", "atom", "neovim", "nvim", "vim", "emacs",
-    "zed", "helix",
+    "code",
+    "vscode",
+    "cursor",
+    "pycharm",
+    "intellij",
+    "clion",
+    "rustrover",
+    "goland",
+    "webstorm",
+    "phpstorm",
+    "rider",
+    "datagrip",
+    "android studio",
+    "xcode",
+    "sublime text",
+    "atom",
+    "neovim",
+    "nvim",
+    "vim",
+    "emacs",
+    "zed",
+    "helix",
+    "spotify",
+    "music",
+    "vlc",
+    "iina",
+    "quicktime player",
     # Terminals / shells
-    "terminal", "iterm", "iterm2", "wezterm", "alacritty", "kitty",
-    "warp", "hyper", "tabby",
+    "terminal",
+    "iterm",
+    "iterm2",
+    "wezterm",
+    "alacritty",
+    "kitty",
+    "warp",
+    "hyper",
+    "tabby",
     # Engineering tooling
-    "altium", "kicad", "ltspice", "vivado", "quartus", "matlab", "simulink",
-    "fusion 360", "fusion360", "solidworks", "autocad", "ansys",
+    "altium",
+    "kicad",
+    "ltspice",
+    "vivado",
+    "quartus",
+    "matlab",
+    "simulink",
+    "fusion 360",
+    "fusion360",
+    "solidworks",
+    "autocad",
+    "ansys",
     # Writing / docs / research
-    "obsidian", "notion", "logseq", "zotero", "mendeley", "papers",
-    "scrivener", "ulysses", "typora", "marktext",
+    "obsidian",
+    "notion",
+    "logseq",
+    "zotero",
+    "mendeley",
+    "papers",
+    "scrivener",
+    "ulysses",
+    "typora",
+    "marktext",
     # Office
-    "microsoft word", "microsoft excel", "powerpoint", "keynote",
-    "libreoffice", "soffice",
+    "microsoft word",
+    "microsoft excel",
+    "powerpoint",
+    "keynote",
+    "libreoffice",
+    "soffice",
     # Dev tools
-    "docker", "postman", "insomnia", "tableplus", "dbeaver", "tableau",
-    "rstudio", "jupyter", "anaconda", "github desktop", "sourcetree",
-    "git", "gitkraken",
+    "docker",
+    "postman",
+    "insomnia",
+    "tableplus",
+    "dbeaver",
+    "tableau",
+    "rstudio",
+    "jupyter",
+    "anaconda",
+    "github desktop",
+    "sourcetree",
+    "git",
+    "gitkraken",
     # Build / compile
-    "cargo", "rustc", "gcc", "clang", "make", "cmake", "ninja",
-    "javac", "node", "npm", "pnpm", "yarn", "tsc", "webpack",
+    "cargo",
+    "rustc",
+    "gcc",
+    "clang",
+    "make",
+    "cmake",
+    "ninja",
+    "javac",
+    "node",
+    "npm",
+    "pnpm",
+    "yarn",
+    "tsc",
+    "webpack",
 ]
 
 NEUTRAL = [
     # Browsers
-    "chrome", "google chrome", "safari", "firefox", "arc", "brave",
-    "edge", "microsoft edge", "vivaldi", "opera",
+    "chrome",
+    "google chrome",
+    "safari",
+    "firefox",
+    "arc",
+    "brave",
+    "edge",
+    "microsoft edge",
+    "vivaldi",
+    "opera",
     # Email / calendar
-    "mail", "outlook", "thunderbird", "spark", "airmail",
-    "calendar", "fantastical",
+    "mail",
+    "outlook",
+    "thunderbird",
+    "spark",
+    "airmail",
+    "calendar",
+    "fantastical",
     # Video calls
-    "zoom", "teams", "microsoft teams", "google meet", "webex", "facetime",
+    "zoom",
+    "teams",
+    "microsoft teams",
+    "google meet",
+    "webex",
+    "facetime",
     # System / utilities
-    "finder", "explorer", "system preferences", "system settings",
-    "activity monitor", "task manager",
+    "finder",
+    "explorer",
+    "system preferences",
+    "system settings",
+    "activity monitor",
+    "task manager",
     # File sync
-    "dropbox", "onedrive", "google drive", "icloud",
+    "dropbox",
+    "onedrive",
+    "google drive",
+    "icloud",
     # Password / security
-    "1password", "bitwarden", "lastpass",
+    "1password",
+    "bitwarden",
+    "lastpass",
     # PDF / image viewers
-    "preview", "acrobat", "adobe acrobat", "skim",
+    "preview",
+    "acrobat",
+    "adobe acrobat",
+    "skim",
 ]
 
 
@@ -130,21 +252,22 @@ def classify(name: str) -> Classification:
 # ── ANSI color helpers ──────────────────────────────────────────────────────
 
 ANSI = {
-    "productive":  "\033[32m",   # green
-    "neutral":     "\033[36m",   # cyan
-    "distraction": "\033[31m",   # red
-    "unknown":     "\033[90m",   # bright black / gray
-    "reset":       "\033[0m",
-    "bold":        "\033[1m",
+    "productive": "\033[32m",  # green
+    "neutral": "\033[36m",  # cyan
+    "distraction": "\033[31m",  # red
+    "unknown": "\033[90m",  # bright black / gray
+    "reset": "\033[0m",
+    "bold": "\033[1m",
 }
 
 BADGE = {
-    "productive":  "PROD",
-    "neutral":     "NEUT",
+    "productive": "PROD",
+    "neutral": "NEUT",
     "distraction": "DIST",
-    "unknown":     "  ? ",
+    "unknown": "  ? ",
 }
 
 
 def colored_badge(category: Category) -> str:
     return f"{ANSI[category]}{BADGE[category]}{ANSI['reset']}"
+

@@ -1,0 +1,662 @@
+{
+  "courses": [
+    {
+      "is_coding": true,
+      "parts": [
+        {
+          "sections": [
+            {
+              "body": "Rust is a systems programming language focused on safety, speed, and concurrency. It achieves memory safety without garbage collection, making it suitable for performance-critical applications.\n\nThis section provides an overview of Rust's core principles and benefits.",
+              "challenge": null,
+              "code": "fn main() {\n    println!(\"Hello, world!\");\n}",
+              "code_lang": "rust",
+              "footer": "The code above is a basic Rust program that prints 'Hello, world!' to the console. The println! macro is used for output.",
+              "title": "Introduction to Rust"
+            },
+            {
+              "body": "Install rustup, the official Rust toolchain installer.",
+              "challenge": null,
+              "code": "curl --proto \"=https\" --tlsv1.2 -sSf https://sh.rustup.rs | sh",
+              "code_lang": "bash",
+              "footer": null,
+              "title": "Setting up Your Environment"
+            },
+            {
+              "body": "Variables in Rust are immutable by default. Use `mut` to make them mutable.",
+              "challenge": {
+                "instructions": "Write a Python function named `double_number` that returns the input value multiplied by 2.",
+                "language": "python",
+                "starter_code": "def double_number(value):\n    # replace this with your code\n    pass\n",
+                "tests": [
+                  {
+                    "code": "assert double_number(4) == 8",
+                    "name": "doubles a positive number"
+                  },
+                  {
+                    "code": "assert double_number(0) == 0",
+                    "name": "doubles zero"
+                  },
+                  {
+                    "code": "assert double_number(-3) == -6",
+                    "name": "doubles a negative number"
+                  }
+                ],
+                "topic": "functions"
+              },
+              "code": "let x = 5;\nlet mut y = 10;\ny += 1;",
+              "code_lang": "rust",
+              "footer": null,
+              "title": "Variables and Data Types"
+            },
+            {
+              "body": "Arithmetic, comparison, and logical operators work much like in C-family languages, but with stricter type rules.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "rust",
+              "footer": null,
+              "title": "Basic Operations"
+            }
+          ],
+          "title": "Part 1: Getting Started with Rust"
+        },
+        {
+          "sections": [
+            {
+              "body": "Every value in Rust has a single owner. When the owner goes out of scope, the value is dropped.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "rust",
+              "footer": null,
+              "title": "Ownership"
+            },
+            {
+              "body": "Borrowing lets you reference a value without taking ownership.",
+              "challenge": null,
+              "code": "fn len(s: &String) -> usize {\n    s.len()\n}",
+              "code_lang": "rust",
+              "footer": null,
+              "title": "Borrowing"
+            },
+            {
+              "body": "One mutable reference OR many immutable references \u2014 never both at the same time.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "rust",
+              "footer": null,
+              "title": "Mutable References"
+            },
+            {
+              "body": "Lifetimes describe how long references are valid.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "rust",
+              "footer": null,
+              "title": "Lifetimes"
+            }
+          ],
+          "title": "Part 2: Ownership and Borrowing"
+        },
+        {
+          "sections": [
+            {
+              "body": "Structs group related fields.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "rust",
+              "footer": null,
+              "title": "Structs"
+            },
+            {
+              "body": "Enums let a value be one of several variants.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "rust",
+              "footer": null,
+              "title": "Enums"
+            },
+            {
+              "body": "Vec<T> is a growable, heap-allocated array.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "rust",
+              "footer": null,
+              "title": "Vectors"
+            }
+          ],
+          "title": "Part 3: Data Structures: Structs, Enums, and Vectors"
+        },
+        {
+          "sections": [
+            {
+              "body": "std::thread::spawn launches OS threads.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "rust",
+              "footer": null,
+              "title": "Threads"
+            },
+            {
+              "body": "mpsc channels move values between threads.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "rust",
+              "footer": null,
+              "title": "Channels"
+            },
+            {
+              "body": "async/await with tokio for I/O concurrency.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "rust",
+              "footer": null,
+              "title": "Async"
+            }
+          ],
+          "title": "Part 4: Concurrency"
+        }
+      ],
+      "title": "Introduction to the Rust Programming Language"
+    },
+    {
+      "is_coding": true,
+      "parts": [
+        {
+          "sections": [
+            {
+              "body": "Svelte is a lightweight JavaScript framework that compiles your code into efficient vanilla JavaScript at build time, eliminating the need for a runtime library. It is known for its simplicity and performance, making it ideal for beginners and experienced developers alike.\n\nUnlike React or Vue, Svelte doesn\u2019t require a virtual DOM. Instead, it directly manipulates the DOM, resulting in faster updates and smaller bundle sizes.\n\nCreate a new Svelte project and explore its file structure to understand how it works.",
+              "challenge": {
+                "instructions": "Write a Python function that simulates the creation of a Svelte project directory structure. The function should return a list of files and directories typically created when initializing a new Svelte project.",
+                "language": "python",
+                "starter_code": "def create_svelte_project_structure():\n    # TODO: Return a list of files and directories in a new Svelte project\n    return []",
+                "tests": [
+                  {
+                    "code": "assert create_svelte_project_structure() == ['public/', 'src/', 'src/main.js', 'src/App.svelte', 'package.json', 'svelte.config.js']",
+                    "name": "test_svelte_structure"
+                  },
+                  {
+                    "code": "assert len(create_svelte_project_structure()) > 0",
+                    "name": "test_structure_not_empty"
+                  },
+                  {
+                    "code": "assert 'src/' in create_svelte_project_structure()",
+                    "name": "test_structure_contains_src"
+                  },
+                  {
+                    "code": "assert 'src/App.svelte' in create_svelte_project_structure()",
+                    "name": "test_structure_contains_app_svelte"
+                  },
+                  {
+                    "code": "assert 'svelte.config.js' in create_svelte_project_structure()",
+                    "name": "test_structure_contains_config"
+                  }
+                ],
+                "topic": "Svelte Project Setup"
+              },
+              "code": null,
+              "code_lang": "javascript",
+              "footer": null,
+              "title": "Overview of Svelte"
+            },
+            {
+              "body": "Svelte offers a simpler learning curve compared to other frameworks. It uses a declarative syntax and provides reactive updates without the complexity of state management libraries. This makes it a great choice for building small to medium-sized applications quickly.\n\nSvelte\u2019s compiler optimizes your code, reducing the need for boilerplate and improving performance.\n\nBuild a simple 'Hello, World!' app in Svelte and compare it to a similar app in React or Vue.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "javascript",
+              "footer": null,
+              "title": "Why Choose Svelte?"
+            },
+            {
+              "body": "To get started with Svelte, you can use the Svelte CLI or tools like Vite. These tools help you scaffold a new project and manage dependencies efficiently. Once set up, you can begin writing Svelte components.",
+              "challenge": null,
+              "code": "npm create svelte@latest my-svelte-app\nnpm install\nnpm run dev",
+              "code_lang": "bash",
+              "footer": "Install and run a Svelte project using the CLI and verify that the development server is working.",
+              "title": "Setting Up Svelte"
+            }
+          ],
+          "title": "What is Svelte?"
+        },
+        {
+          "sections": [
+            {
+              "body": "Components in Svelte are reusable pieces of code that encapsulate HTML, CSS, and JavaScript. To create a component, you define a .svelte file with a script, style, and template section. This allows for a clean and organized code structure.",
+              "challenge": null,
+              "code": "<script>\n  let name = 'World';\n</script>\n\n<h1>Hello, {name}!</h1>",
+              "code_lang": "html",
+              "footer": "Create a new component that displays a greeting and use it in your main app.",
+              "title": "Creating a Component"
+            },
+            {
+              "body": "Props allow you to pass data from a parent component to a child component. In Svelte, you define props using the export keyword in the script section. This makes it easy to share and reuse data across components.",
+              "challenge": null,
+              "code": "<script>\n  export let title = 'Default Title';\n</script>\n\n<h2>{title}</h2>",
+              "code_lang": "html",
+              "footer": "Pass a prop to a child component and display it in the template.",
+              "title": "Component Props"
+            },
+            {
+              "body": "Svelte allows you to create custom events using the createEventDispatcher function. This enables child components to communicate with their parent components by dispatching events with data.",
+              "challenge": null,
+              "code": "<script>\n  import { createEventDispatcher } from 'svelte';\n  const dispatch = createEventDispatcher();\n\n  function handleClick() {\n    dispatch('customEvent', { message: 'Hello from child!' });\n  }\n</script>\n\n<button on:click={handleClick}>Click Me</button>",
+              "code_lang": "html",
+              "footer": "Create a button in a child component that dispatches an event to the parent component when clicked.",
+              "title": "Component Events"
+            }
+          ],
+          "title": "Svelte Components"
+        },
+        {
+          "sections": [
+            {
+              "body": "Svelte uses reactive statements to automatically update the DOM when variables change. You can use the $: syntax to create reactive expressions that update whenever their dependencies change.",
+              "challenge": null,
+              "code": "<script>\n  let count = 0;\n  $: doubled = count * 2;\n</script>\n\n<p>Count: {count}</p>\n<p>Doubled: {doubled}</p>\n<button on:click={() => count++}>Increment</button>",
+              "code_lang": "html",
+              "footer": "Implement a reactive statement that updates a value when another variable changes.",
+              "title": "Reactive Statements"
+            },
+            {
+              "body": "Reactive effects are used to perform actions when a variable changes. They are defined using the $: syntax and can be used to update the DOM, fetch data, or perform other side effects.",
+              "challenge": null,
+              "code": "<script>\n  let value = 10;\n  $: if (value > 5) console.log('Value is greater than 5');\n</script>\n\n<input bind:value={value} type=\"number\">",
+              "code_lang": "html",
+              "footer": "Write a reactive effect that logs a message when a variable exceeds a certain threshold.",
+              "title": "Reactive Effects"
+            },
+            {
+              "body": "Derived stores in Svelte allow you to create new stores based on existing ones. They are useful for transforming or combining data from multiple stores into a single derived value.",
+              "challenge": null,
+              "code": "import { derived } from 'svelte/store';\n\nlet count = writable(0);\nlet doubled = derived(count, $count => $count * 2);",
+              "code_lang": "javascript",
+              "footer": "Create a derived store that calculates the sum of two other stores.",
+              "title": "Derived Stores"
+            }
+          ],
+          "title": "Reactivity in Svelte"
+        },
+        {
+          "sections": [
+            {
+              "body": "Writable stores are used to manage mutable state in Svelte. They provide a way to update and subscribe to changes in a centralized location, making it easier to manage state across multiple components.",
+              "challenge": null,
+              "code": "import { writable } from 'svelte/store';\n\nlet theme = writable('light');",
+              "code_lang": "javascript",
+              "footer": "Create a writable store for a theme and use it to toggle between light and dark modes.",
+              "title": "Writable Stores"
+            },
+            {
+              "body": "Readable stores are used to manage state that can be read but not modified. They are useful for storing static data or data that is updated from an external source.",
+              "challenge": null,
+              "code": "import { readable } from 'svelte/store';\n\nlet config = readable({ theme: 'light' });",
+              "code_lang": "javascript",
+              "footer": "Use a readable store to display static configuration data in your app.",
+              "title": "Readable Stores"
+            },
+            {
+              "body": "You can use stores in Svelte components by importing them and using the $ prefix to access their values. This allows you to bind store values to component variables and update the DOM reactively.",
+              "challenge": null,
+              "code": "<script>\n  import { $theme } from './stores.js';\n</script>\n\n<p>Current Theme: {$theme}</p>",
+              "code_lang": "html",
+              "footer": "Display the value of a store in a component and update it using a button.",
+              "title": "Using Stores in Components"
+            }
+          ],
+          "title": "Svelte Stores"
+        },
+        {
+          "sections": [
+            {
+              "body": "SvelteKit is a framework for building Svelte applications with routing, server-side rendering, and more. It provides a file-based routing system, where each file in the src/routes directory corresponds to a route in your app.",
+              "challenge": null,
+              "code": "npm create svelte@latest my-sveltekit-app\nnpm install\nnpm run dev",
+              "code_lang": "bash",
+              "footer": "Set up a new SvelteKit project and explore its structure.",
+              "title": "Introduction to SvelteKit"
+            },
+            {
+              "body": "To create a route in SvelteKit, you create a .svelte file in the src/routes directory. The file name determines the route URL. For example, a file named about.svelte will be accessible at /about.",
+              "challenge": null,
+              "code": "<script>\n  import { page } from '$app/stores';\n</script>\n\n<h1>About Page</h1>\n<p>{$page.url.pathname}</p>",
+              "code_lang": "html",
+              "footer": "Create a new route for an 'About' page and display its URL in the template.",
+              "title": "Creating Routes"
+            },
+            {
+              "body": "You can navigate between routes using the <a> tag or the goto function from the $app/navigation module. This allows you to create links and programmatically change the current route.",
+              "challenge": null,
+              "code": "<a href=\"/about\">About</a>",
+              "code_lang": "html",
+              "footer": "Add a navigation link to your app and test it by clicking.",
+              "title": "Navigating Between Routes"
+            }
+          ],
+          "title": "Routing in Svelte"
+        },
+        {
+          "sections": [
+            {
+              "body": "You can fetch data from an API in Svelte using the fetch function. This is typically done in the onMount lifecycle function to ensure the data is fetched after the component is mounted.",
+              "challenge": null,
+              "code": "import { onMount } from 'svelte';\n\nlet data;\n\nonMount(async () => {\n  const response = await fetch('https://api.example.com/data');\n  data = await response.json();\n});",
+              "code_lang": "javascript",
+              "footer": "Fetch data from a public API and display it in your component.",
+              "title": "Fetching Data"
+            },
+            {
+              "body": "Once you have fetched data, you can display it in your component using Svelte\u2019s reactive syntax. This allows you to bind the data to the DOM and update it dynamically.",
+              "challenge": null,
+              "code": "<script>\n  let items = [];\n\n  onMount(async () => {\n    const response = await fetch('https://api.example.com/items');\n    items = await response.json();\n  });\n</script>\n\n<ul>\n  {#each items as item}\n    <li>{item.name}</li>\n  {/each}\n</ul>",
+              "code_lang": "html",
+              "footer": "Display a list of items fetched from an API using the each block.",
+              "title": "Displaying Data"
+            },
+            {
+              "body": "When fetching data from an API, it\u2019s important to handle errors gracefully. You can use try/catch blocks to catch any errors that occur during the fetch and display a user-friendly message.",
+              "challenge": null,
+              "code": "onMount(async () => {\n  try {\n    const response = await fetch('https://api.example.com/data');\n    if (!response.ok) throw new Error('Network response was not ok');\n    data = await response.json();\n  } catch (error) {\n    console.error('There was a problem with the fetch operation:', error);\n  }\n});",
+              "code_lang": "javascript",
+              "footer": "Implement error handling for an API request and display an error message if the request fails.",
+              "title": "Error Handling"
+            }
+          ],
+          "title": "Svelte and APIs"
+        },
+        {
+          "sections": [
+            {
+              "body": "Actions in Svelte allow you to add behavior to DOM elements. They are functions that can be attached to elements and are useful for handling events, animations, or other element-specific logic.",
+              "challenge": null,
+              "code": "export function highlight(node) {\n  node.style.backgroundColor = 'yellow';\n\n  return {\n    destroy() {\n      node.style.backgroundColor = '';\n    }\n  };\n}",
+              "code_lang": "javascript",
+              "footer": "Create an action that highlights an element when it is clicked.",
+              "title": "Actions"
+            },
+            {
+              "body": "Svelte provides built-in support for transitions and animations. You can use the transition directive to animate elements when they are shown or hidden, and the animate directive to create custom animations.",
+              "challenge": null,
+              "code": "<script>\n  import { fade } from 'svelte/transition';\n</script>\n\n{#if show}\n  <div transition:fade>Animated Content</div>\n{/if}",
+              "code_lang": "html",
+              "footer": "Add a fade transition to an element that appears when a button is clicked.",
+              "title": "Transitions and Animations"
+            },
+            {
+              "body": "Follow best practices when building Svelte apps, such as keeping components small and focused, using stores for global state, and leveraging Svelte\u2019s reactivity features to keep your code clean and efficient.\n\nOrganize your code into small, reusable components and use stores for shared state.\n\nRefactor a large component into smaller, focused components and use a store to share data between them.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "javascript",
+              "footer": null,
+              "title": "Best Practices"
+            }
+          ],
+          "title": "Advanced Svelte Concepts"
+        }
+      ],
+      "title": "Introduction to Svelte"
+    },
+    {
+      "is_coding": false,
+      "parts": [
+        {
+          "sections": [
+            {
+              "body": "The introduction is the first paragraph of your essay and should grab the reader's attention. It typically includes a hook, some background information, and a thesis statement that outlines your main argument or purpose.\n\nStart by brainstorming a strong opening sentence to engage your audience.\n\nWrite an introduction for a sample essay about the importance of education.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Introduction"
+            },
+            {
+              "body": "Body paragraphs are the core of your essay. Each should focus on a single idea that supports your thesis. Include a topic sentence, supporting details, and a concluding sentence to wrap up the point.\n\nEnsure your body paragraphs are well-organized and clearly connected to your thesis.\n\nWrite a body paragraph that supports the thesis 'Education is essential for personal growth' with at least two examples.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Body Paragraphs"
+            },
+            {
+              "body": "The conclusion summarizes your main points and restates your thesis in a new way. It should leave the reader with a final thought or call to action, reinforcing the significance of your argument.\n\nAvoid introducing new information in the conclusion; instead, focus on wrapping up your ideas effectively.\n\nWrite a conclusion for the sample essay about education that reflects on its long-term impact.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Conclusion"
+            },
+            {
+              "body": "Transitions help your essay flow smoothly from one idea to the next. Use phrases like 'Furthermore,' 'However,' or 'In contrast' to connect your paragraphs and improve readability.\n\nUse transitions to guide the reader through your essay's logical progression.\n\nRevise a short essay to include at least three effective transition phrases.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Transitions Between Paragraphs"
+            }
+          ],
+          "title": "Understanding the Essay Structure"
+        },
+        {
+          "sections": [
+            {
+              "body": "A thesis statement is a concise summary of your essay's main point or claim. It should be specific, arguable, and provide a roadmap for the rest of your essay.\n\nA strong thesis statement sets the tone and direction for your essay.\n\nWrite a thesis statement for an essay on the benefits of reading.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "What is a Thesis Statement?"
+            },
+            {
+              "body": "To craft an effective thesis, start by identifying your topic and purpose. Then, narrow it down to a specific argument or perspective that you can support with evidence throughout your essay.\n\nAvoid vague or overly broad thesis statements that lack focus.\n\nRevise a weak thesis statement to make it more specific and arguable.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Crafting an Effective Thesis"
+            },
+            {
+              "body": "Good thesis statements are clear and specific, while bad ones are too general or make unsupported claims. For example, 'Reading improves critical thinking skills' is better than 'Reading is good.'\n\nUse examples to understand how to improve your thesis statement.\n\nIdentify and revise a weak thesis statement from a sample essay.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Examples of Good and Bad Thesis Statements"
+            },
+            {
+              "body": "Your thesis statement should be placed at the end of your introduction. This placement allows you to first hook the reader and provide context before presenting your main argument.\n\nEnsure your thesis is clearly visible and logically follows your introduction.\n\nPlace a thesis statement at the end of a given introduction.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Thesis Statement Placement"
+            }
+          ],
+          "title": "Developing a Strong Thesis Statement"
+        },
+        {
+          "sections": [
+            {
+              "body": "A topic sentence introduces the main idea of a paragraph and connects it to your thesis. It helps the reader understand the paragraph's focus and how it supports your overall argument.\n\nTopic sentences should be clear and concise.\n\nWrite a topic sentence for a paragraph about the impact of technology on education.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Purpose of a Topic Sentence"
+            },
+            {
+              "body": "Strong topic sentences are specific and include a controlling idea that outlines the paragraph's direction. For example, 'Technology enhances education by providing access to online resources' is more effective than 'Technology is important in education.'\n\nUse topic sentences to guide the development of each paragraph.\n\nRevise a vague topic sentence to make it more specific and effective.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Creating Strong Topic Sentences"
+            },
+            {
+              "body": "Topic sentences are usually placed at the beginning of a paragraph. This placement helps the reader immediately grasp the paragraph's focus and how it relates to the thesis.\n\nAvoid placing topic sentences in the middle or end of a paragraph.\n\nRewrite a paragraph to include a strong topic sentence at the beginning.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Topic Sentence Placement"
+            },
+            {
+              "body": "Topic sentences help maintain paragraph flow by clearly stating the main idea and linking it to the previous paragraph. This connection ensures your essay reads cohesively and logically.\n\nUse transitions and topic sentences to improve paragraph flow.\n\nRevise a paragraph to improve its flow using a topic sentence and transition.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Topic Sentences and Paragraph Flow"
+            }
+          ],
+          "title": "Writing Effective Topic Sentences"
+        },
+        {
+          "sections": [
+            {
+              "body": "Evidence can include facts, statistics, quotes, anecdotes, or examples. Choose the type of evidence that best supports your argument and appeals to your audience.\n\nUse a variety of evidence to strengthen your essay's credibility.\n\nFind and include a relevant statistic in a paragraph about the benefits of exercise.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Types of Evidence"
+            },
+            {
+              "body": "Integrate evidence smoothly into your paragraphs by introducing it with a signal phrase and then explaining how it supports your topic sentence and thesis.\n\nAvoid dropping evidence without context or explanation.\n\nRevise a paragraph to integrate a quote or example effectively.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Integrating Evidence"
+            },
+            {
+              "body": "After presenting evidence, analyze it to show how it supports your argument. Explain its relevance and significance to your topic.\n\nAnalysis helps the reader understand the importance of the evidence.\n\nAnalyze a given example to explain how it supports a specific argument.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Analyzing Evidence"
+            },
+            {
+              "body": "Examples are specific instances that illustrate your points. They make your arguments more relatable and concrete, helping the reader visualize your ideas.\n\nUse examples to clarify abstract concepts in your essay.\n\nWrite a paragraph that uses an example to support a claim about the importance of teamwork.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Examples in Essays"
+            }
+          ],
+          "title": "Using Evidence and Examples"
+        },
+        {
+          "sections": [
+            {
+              "body": "Editing is crucial to ensure your essay is clear, concise, and free of errors. It involves checking for grammar, punctuation, and sentence structure to improve readability and professionalism.\n\nTake time to review your essay for clarity and correctness.\n\nEdit a short paragraph for grammar and clarity.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "The Importance of Editing"
+            },
+            {
+              "body": "Revising focuses on the content and structure of your essay. Look for areas where your argument can be strengthened, examples can be added, or ideas can be reorganized for better flow.\n\nRevising helps you improve the overall quality of your essay.\n\nRevise a sample essay to improve its argument and flow.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Revising for Content"
+            },
+            {
+              "body": "Getting feedback from peers or instructors can help you identify blind spots in your essay. Ask for suggestions on clarity, argument strength, and overall impact.\n\nUse peer feedback to refine your essay before final submission.\n\nExchange essays with a peer and provide constructive feedback.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Peer Review and Feedback"
+            },
+            {
+              "body": "Proofreading is the final step in the writing process. Read your essay aloud or use tools like spell check to catch any remaining errors and ensure your message is clear and polished.\n\nProofreading helps you present your best work to the reader.\n\nProofread a short essay for any spelling or grammatical errors.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Final Proofreading"
+            }
+          ],
+          "title": "Editing and Revising Your Essay"
+        },
+        {
+          "sections": [
+            {
+              "body": "The purpose of your essay determines its tone and structure. Common purposes include to inform, persuade, entertain, or analyze. Clarify your purpose before you begin writing to stay focused.\n\nChoose a purpose that aligns with your essay's topic and audience.\n\nWrite an essay with a clear purpose, such as persuading readers to adopt a healthy lifestyle.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Identifying the Purpose"
+            },
+            {
+              "body": "Your audience influences the language, examples, and depth of your essay. Consider their background, interests, and level of knowledge to tailor your message effectively.\n\nAdapt your writing to connect with your intended audience.\n\nRevise a paragraph to make it more suitable for a younger audience.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Understanding the Audience"
+            },
+            {
+              "body": "Tone refers to the writer's attitude toward the subject and audience. Style includes the choice of words, sentence structure, and overall voice. Match your tone and style to your purpose and audience for better engagement.\n\nUse a formal tone for academic essays and a casual tone for personal narratives.\n\nAdjust the tone of a given paragraph to match a different audience.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Tone and Style"
+            },
+            {
+              "body": "Adapt your essay by considering the needs and expectations of your audience. This might involve simplifying complex ideas, using relatable examples, or adjusting the level of detail.\n\nTailor your essay to make it more impactful for your readers.\n\nRewrite a paragraph to make it more accessible to a general audience.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Adapting Your Essay"
+            }
+          ],
+          "title": "Writing for Different Purposes and Audiences"
+        },
+        {
+          "sections": [
+            {
+              "body": "Run-on sentences are long and lack proper punctuation, while sentence fragments are incomplete. Both can disrupt the flow of your essay and confuse the reader. Use periods, commas, and conjunctions to fix these issues.\n\nAvoid run-on sentences and fragments by using proper punctuation.\n\nCorrect a paragraph containing run-on sentences and fragments.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Run-on Sentences and Sentence Fragments"
+            },
+            {
+              "body": "Weak thesis and topic sentences can make your essay lack direction. Ensure your thesis is specific and your topic sentences clearly introduce the paragraph's main idea.\n\nRevise your thesis and topic sentences to improve clarity and focus.\n\nRevise a weak thesis and topic sentence to make them stronger and more specific.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Weak Thesis and Topic Sentences"
+            },
+            {
+              "body": "Clich\u00e9s and generalizations weaken your writing by making it predictable or vague. Replace them with original ideas and specific examples to make your essay more engaging and credible.\n\nAvoid overused phrases and broad statements in your essay.\n\nRevise a paragraph to replace clich\u00e9s with fresh, original language.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Overusing Clich\u00e9s and Generalizations"
+            },
+            {
+              "body": "Coherence refers to the logical flow of ideas, while cohesion is about how well sentences and paragraphs connect. Use transitions and consistent topic sentences to improve both.\n\nEnsure your essay is easy to follow and logically structured.\n\nRevise a short essay to improve its coherence and cohesion.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Lack of Coherence and Cohesion"
+            }
+          ],
+          "title": "Common Essay Writing Mistakes and How to Avoid Them"
+        }
+      ],
+      "title": "How to Write a Good Essay"
+    }
+  ]
+}
