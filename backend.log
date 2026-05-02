@@ -6,14 +6,3 @@
  * Running on http://127.0.0.1:8000
  * Running on http://192.168.254.207:8000
 [33mPress CTRL+C to quit[0m
-127.0.0.1 - - [02/May/2026 15:40:15] "GET /user-state?user_id=default HTTP/1.1" 200 -
-127.0.0.1 - - [02/May/2026 15:41:03] "POST /api/ai/qa HTTP/1.1" 200 -
-127.0.0.1 - - [02/May/2026 15:41:40] "POST /api/ai/generate-questions HTTP/1.1" 200 -
-127.0.0.1 - - [02/May/2026 15:41:53] "POST /api/ai/generate-course HTTP/1.1" 200 -
-127.0.0.1 - - [02/May/2026 15:42:13] "GET /user-state?user_id=default HTTP/1.1" 200 -
-127.0.0.1 - - [02/May/2026 15:45:47] "GET /user-state?user_id=default HTTP/1.1" 200 -
-127.0.0.1 - - [02/May/2026 15:50:27] "GET /user-state?user_id=default HTTP/1.1" 200 -
-127.0.0.1 - - [02/May/2026 16:29:59] "GET /user-state?user_id=default HTTP/1.1" 200 -
-127.0.0.1 - - [02/May/2026 16:30:07] "POST /update-progress HTTP/1.1" 200 -
-127.0.0.1 - - [02/May/2026 16:30:08] "POST /update-progress HTTP/1.1" 200 -
-127.0.0.1 - - [02/May/2026 16:30:09] "POST /update-progress HTTP/1.1" 200 -

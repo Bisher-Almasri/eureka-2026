@@ -1,5 +1,5 @@
 """
-Lockedf TUI — Textual port of the Lockedf study app.
+Locked In TUI — Textual port of the Locked In study app.
 
 Two screens:
   • DashboardScreen — landing page with Create-Course card and course list
@@ -950,7 +950,7 @@ class NavBar(Static):
     def compose(self) -> ComposeResult:
         with Container(id="nav-wrap"):
             with Horizontal(id="nav"):
-                yield Static("Lockedf", id="nav-brand")
+                yield Static("Locked In", id="nav-brand")
                 for label in ("Dashboard", "Gyfts", "DDQ Animation"):
                     cls = "nav-item-active" if label == self._active else "nav-item"
                     yield Static(label, classes=cls)
@@ -2506,7 +2506,7 @@ class ProfileScreen(Screen):
 
 class GyftTUI(App):
     CSS = CSS
-    TITLE = "Lockedf"
+    TITLE = "Locked In"
     SUB_TITLE = "Personalized AI learning, in your terminal"
     THEME = "dracula"
 
