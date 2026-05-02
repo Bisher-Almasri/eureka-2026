@@ -1,0 +1,20 @@
+{
+  "default": {
+    "attempt_history": [],
+    "lessons_completed": [],
+    "quiz_scores": {},
+    "recent_mistakes": [],
+    "retries_per_quiz": {},
+    "skill_levels": {},
+    "skipped_sections": [],
+    "solutions": [],
+    "time_spent_per_lesson": {
+      "Body Paragraphs": 0,
+      "Conclusion": 0,
+      "Essay Outline": 2,
+      "Introduction": 2
+    },
+    "updated_at": "2026-05-02T05:53:12.662916+00:00",
+    "user_id": "default"
+  }
+}

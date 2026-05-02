@@ -4,17 +4,26 @@ from typing import Any
 from urllib import error, request
 
 
-GEMINI_MODEL = "gemini-flash-latest"
-GEMINI_API_URL = (
-    f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
-)
+HC_AI_API_URL = "https://ai.hackclub.com/proxy/v1/chat/completions"
+HC_AI_MODEL = os.environ.get("HC_AI_MODEL", "qwen/qwen3-32b")
+HC_AI_TIMEOUT_SECONDS = int(os.environ.get("HC_AI_TIMEOUT_SECONDS", "25"))
+
+MAX_USER_PROMPT_CHARS = 1800
+MAX_CODE_CHARS = 3500
+MAX_TEST_RESULTS_CHARS = 1200
+
+COURSE_MAX_TOKENS = int(os.environ.get("HC_AI_COURSE_MAX_TOKENS", "4200"))
+QUESTIONS_MAX_TOKENS = int(os.environ.get("HC_AI_QUESTIONS_MAX_TOKENS", "1200"))
+QA_MAX_TOKENS = int(os.environ.get("HC_AI_QA_MAX_TOKENS", "500"))
+DEBUG_MAX_TOKENS = int(os.environ.get("HC_AI_DEBUG_MAX_TOKENS", "350"))
+CHALLENGE_MAX_TOKENS = int(os.environ.get("HC_AI_CHALLENGE_MAX_TOKENS", "1400"))
 
 
-def get_gemini_api_key() -> str:
-    api_key = os.environ.get("GEMINI_API_KEY")
+def get_hc_ai_api_key() -> str:
+    api_key = os.environ.get("HC_AI_API_KEY") or os.environ.get("HACKCLUB_AI_API_KEY")
 
     if not api_key:
-        raise RuntimeError("GEMINI_API_KEY is not set")
+        raise RuntimeError("HC_AI_API_KEY is not set")
 
     return api_key
 
@@ -40,169 +49,119 @@ def extract_json_response(response_text: str) -> str:
     return trimmed_response
 
 
-def _post_gemini_prompt(prompt: str) -> str:
+def _truncate_text(text: str, max_chars: int) -> str:
+    if len(text) <= max_chars:
+        return text
+    return text[:max_chars] + "\n...[truncated for latency]"
+
+
+def _post_hc_ai_prompt(prompt: str, max_tokens: int) -> str:
     payload = json.dumps(
         {
-            "contents": [
+            "model": HC_AI_MODEL,
+            "messages": [
                 {
-                    "parts": [
-                        {
-                            "text": prompt,
-                        }
-                    ]
-                }
-            ]
+                    "role": "system",
+                    "content": (
+                        "/no_think\n"
+                        "You are a fast JSON API. Be concise. Do not explain your reasoning. "
+                        "Return only the requested JSON."
+                    ),
+                },
+                {"role": "user", "content": prompt},
+            ],
+            "temperature": 0.2,
+            "max_tokens": max_tokens,
         }
     ).encode("utf-8")
 
     api_request = request.Request(
-        f"{GEMINI_API_URL}?key={get_gemini_api_key()}",
+        HC_AI_API_URL,
         data=payload,
-        headers={"Content-Type": "application/json"},
+        headers={
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "User-Agent": "curl/8.0.0",
+            "Authorization": f"Bearer {get_hc_ai_api_key()}",
+        },
         method="POST",
     )
 
     try:
-        with request.urlopen(api_request) as response:
+        with request.urlopen(api_request, timeout=HC_AI_TIMEOUT_SECONDS) as response:
             data = json.loads(response.read().decode("utf-8"))
     except error.HTTPError as exc:
-        raise RuntimeError(f"Gemini API error: {exc.code}") from exc
+        details = ""
+        try:
+            body = exc.read().decode("utf-8")
+            if body:
+                details = f" - {body}"
+        except Exception:
+            details = ""
+        raise RuntimeError(f"HC AI API error: {exc.code}{details}") from exc
 
-    response_text = (
-        data.get("candidates", [{}])[0]
-        .get("content", {})
-        .get("parts", [{}])[0]
-        .get("text")
-    )
+    choices = data.get("choices", [])
+    response_text = None
+
+    if choices:
+        response_text = choices[0].get("message", {}).get("content")
 
     if not response_text:
-        raise RuntimeError("Gemini API returned an empty response")
+        raise RuntimeError("HC AI API returned an empty response")
 
     return extract_json_response(response_text)
 
 
-def build_course_prompt(prompt: str) -> str:
+def build_course_prompt(
+    prompt: str,
+    learning_context: dict[str, Any] | None = None,
+) -> str:
+    learning_context = learning_context or {}
     return f"""
-You are a coding course writer. You write courses that teach coding to beginners.
-You will be given a prompt that describes the course you need to write.
+You are a course writer. First decide whether the requested topic is coding/programming/software-development related.
 
 CRITICAL: You MUST respond with ONLY valid JSON wrapped in ```json blocks. No other text before or after.
-For each course, you will create a w3school-style course outline with a title, description, language, and structured parts.
-
-A section's content, "c", MUST be an array of objects. Each object can be a paragraph or a code block.
-- For a paragraph, use: {{ "type": "p", "text": "your paragraph text here" }}
-- For a code block, use: {{ "type": "code", "lang": "language-name", "code": "your code here" }}
-
-Your task is to generate a course outline in JSON format with the following structure (This is an example of a Python course, the contents are single sentences, but you HAVE to write detailed explinations and examples):
-{{
-    "t": "Python for Beginners: A Comprehensive Introduction",
-    "d": "This course provides a friendly and accessible introduction to Python programming. Learn the fundamentals of Python syntax, data structures, control flow, and object-oriented programming. Build practical projects to solidify your understanding and gain the skills necessary to write your own Python programs.",
-    "l": "python",
+- Use exactly this JSON shape:
+  {{
+    "t": "Course Title",
+    "d": "One sentence description",
+    "l": "programming language if coding-related, otherwise general",
+    "ic": true or false,
     "c": [
-        {{
-            "n": "Part 1: Getting Started with Python",
-            "d": "Introduction to Python, installation, setting up a development environment, and basic syntax. Covering variables, data types (integers, floats, strings, booleans), and simple operations. Using the print() function. Examples: simple calculations, string concatenation, and basic input using input().",
-            "s": [
-                {{
-                    "t": "Introduction to Python",
-                    "c": [
-                        {{ "type": "p", "text": "Python is a high-level, interpreted programming language known for its readability and simple syntax. It was created by Guido van Rossum and first released in 1991." }},
-                        {{ "type": "p", "text": "It is used in web development, data science, artificial intelligence, and more. This section will introduce you to the fundamental concepts of Python." }},
-                        {{ "type": "code", "lang": "python", "code": "print('Hello, World!')" }},
-                        {{ "type": "p", "text": "The code above is a simple Python program that prints 'Hello, World!' to the console. The print() function is a built-in function that outputs text." }}
-                    ]
-                }},
-                {{
-                    "t": "Setting up your Environment",
-                    "c": [{{ "type": "p", "text": "Installing Python, choosing an IDE (VS Code, PyCharm), running your first Python program."}}]
-                }},
-                {{
-                    "t": "Variables and Data Types",
-                    "c": [{{ "type": "p", "text": "Understanding variables, assigning values, exploring integers, floats, strings, and booleans."}}]
-                }},
-                {{
-                    "t": "Basic Operations",
-                    "c": [{{"type": "p", "text": "Performing arithmetic operations (+, -, *, /), string concatenation, and working with input."}}]
-                }}
+      {{
+        "n": "Part title",
+        "d": "Short part description",
+        "s": [
+          {{
+            "t": "Section title",
+            "c": [
+              {{ "type": "p", "text": "80-140 word explanation" }},
+              {{ "type": "code", "lang": "python", "code": "short example" }},
+              {{ "type": "p", "text": "one sentence practice prompt" }}
             ]
-        }},
-        {{
-            "n": "Part 2: Control Flow and Looping",
-            "d": "Exploring conditional statements (if, elif, else) and loop structures (for loops, while loops). Learning about logical operators (and, or, not) and how to use them in control flow. Examples: building a simple calculator, implementing a guessing game, and iterating through lists.",
-            "s": [
-                {{
-                    "t": "Conditional Statements",
-                    "c": [{{"type": "p", "text": "Using `if`, `elif`, and `else` to make decisions based on conditions."}}]
-                }},
-                {{
-                    "t": "For Loops",
-                    "c": [{{"type": "p", "text": "Iterating through sequences (lists, strings, ranges) using `for` loops."}}]
-                }},
-                {{
-                    "t": "While Loops",
-                    "c": [{{"type": "p", "text": "Repeating code blocks as long as a condition is true using `while` loops."}}]
-                }},
-                {{
-                    "t": "Logical Operators",
-                    "c": [{{"type": "p", "text": "Combining conditions using `and`, `or`, and `not`."}}]
-                }}
-            ]
-        }},
-        {{
-            "n": "Part 3: Data Structures: Lists and Dictionaries",
-            "d": "In-depth look at lists and dictionaries, two fundamental Python data structures. Covering list operations (accessing elements, slicing, appending, inserting, removing), dictionary operations (adding, accessing, modifying, deleting key-value pairs), and common use cases. Examples: creating a to-do list, managing student records, and counting word frequencies.",
-            "s": [
-                {{
-                    "t": "Lists: Introduction",
-                    "c": [{{"type": "p", "text": "Creating lists, accessing elements, list slicing."}}]
-                }},
-                {{
-                    "t": "Lists: Operations",
-                    "c": [{{"type": "p", "text": "Appending, inserting, removing, sorting, and searching within lists."}}]
-                }},
-                {{
-                    "t": "Dictionaries: Introduction",
-                    "c": [{{"type": "p", "text": "Creating dictionaries, adding key-value pairs, accessing values."}}]
-                }},
-                {{
-                    "t": "Dictionaries: Operations",
-                    "c": [{{"type": "p", "text": "Modifying, deleting, iterating through dictionaries."}}]
-                }}
-            ]
-        }},
-        {{
-            "n": "Part 4: Functions and Modules",
-            "d": "Understanding functions for code reusability and modularity. Defining functions, passing arguments, returning values, and using built-in functions. Introduction to modules and importing external libraries. Examples: creating a function to calculate the area of a rectangle, writing a module for mathematical operations, and using the `math` module.",
-            "s": [
-                {{
-                    "t": "Defining Functions",
-                    "c": [{{"type": "p", "text": "Creating your own functions with parameters and return values."}}]
-                }},
-                {{
-                    "t": "Function Arguments",
-                    "c": [{{"type": "p", "text": "Passing arguments by position and keyword."}}]
-                }},
-                {{
-                    "t": "Built-in Functions",
-                    "c": [{{"type": "p", "text": "Exploring useful built-in functions like `len()`, `range()`, and `sum()`."}}]
-                }},
-                {{
-                    "t": "Modules",
-                    "c": [{{"type": "p", "text": "Importing and using external libraries like `math` and `random`."}}]
-                }}
-            ]
-        }}
+          }}
+        ]
+      }}
     ]
-}}
+  }}
+- Set "ic" to true only for coding/programming/software-development topics.
+- Set "ic" to false for non-coding topics like history, cooking, fitness, math, business, art, languages, science, etc.
+- Create 5-7 parts/modules.
+- Create 3-4 sections per part/module.
+- Keep each paragraph under 450 characters.
+- If "ic" is true, include at most one short code block per section.
+- If "ic" is false, do not include code blocks at all; use only paragraph objects.
+- Make the course substantial enough to feel like a real multi-module course.
+- Do not include a separate review/revision pass.
+- Adapt to this learner profile:
+  - skill level: {learning_context.get("skill_level", "beginner")}
+  - recent mistakes: {json.dumps(learning_context.get("recent_mistakes", []))}
+  - pace: {learning_context.get("pace", "steady learner")}
+- Simplify explanations and add fundamentals if the learner is struggling.
+- Increase challenge and use deeper examples if the learner is advanced.
+- Include targeted examples for weak areas when recent mistakes are available.
 
-Guidelines:
-- Make each part comprehensive but concise (max 800 characters per part)
-- Include practical examples and explanations
-- Structure each part with clear headings and content
-- Use markdown formatting within content strings
-- Create 3-5 parts for a complete course
-
-Here is the prompt: {prompt}
+Course request: {_truncate_text(prompt, MAX_USER_PROMPT_CHARS)}
 
 Remember: Respond with ONLY ```json [your json here] ``` and nothing else.
 """
@@ -223,24 +182,27 @@ Create an array of question objects. Each question should be in this exact JSON 
     "a3": "option 3", 
     "a4": "option 4",
     "part": 0,
-    "correct": "a1"
+    "correct": "a1",
+    "e": "2-3 sentence explanation of why the correct answer is right and why a common wrong answer is wrong"
 }}
 
 Guidelines:
-- Generate 1-2 questions per course part
+- Generate 3-5 questions for the provided section or course content
 - Make questions challenging but fair
 - Ensure one answer is clearly correct
 - Use the 0-based index for the "part" field
 - Each question should be multiple choice with exactly 4 options
 - The "correct" field must be one of: "a1", "a2", "a3", or "a4"
+- The "e" field is required because the TUI shows it when the learner answers incorrectly
 
-Here is the course content: {prompt}
+Here is the course content: {_truncate_text(prompt, MAX_USER_PROMPT_CHARS)}
 
 Remember: Respond with ONLY ```json [your json array here] ``` and nothing else.
 """
 
 
-def build_answer_prompt(prompt: str) -> str:
+def build_answer_prompt(prompt: str, learning_context: dict[str, Any] | None = None) -> str:
+    learning_context = learning_context or {}
     return f"""
 You are an AI assistant specialized in answering coding questions for beginners.
 
@@ -252,6 +214,14 @@ Guidelines:
 - If a language is specified, focus on that language; otherwise use Python or give general advice
 - Include practical examples when helpful
 - Keep answers informative but concise (max 1000 characters)
+- Adapt to this learner profile:
+  - skill level: {learning_context.get("skill_level", "beginner")}
+  - recent mistakes: {json.dumps(learning_context.get("recent_mistakes", []))}
+  - pace: {learning_context.get("pace", "steady learner")}
+  - recommendations: {json.dumps(learning_context.get("recommendations", []))}
+- If the learner is struggling or moving slowly, simplify the explanation and use a smaller example.
+- If the learner is advanced and making few mistakes, increase the difficulty slightly.
+- Include a targeted example that addresses recent mistakes when possible.
 
 Response format:
 {{
@@ -272,19 +242,212 @@ For non-coding questions:
     "l": "general"
 }}
 
-Question: {prompt}
+Question: {_truncate_text(prompt, MAX_USER_PROMPT_CHARS)}
 
 Remember: Respond with ONLY ```json [your json here] ``` and nothing else.
 """
 
 
-def generate_course_response(prompt: str) -> str:
-    return _post_gemini_prompt(build_course_prompt(prompt))
+def build_debug_coach_prompt(
+    code: str,
+    language: str,
+    attempt_count: int,
+    hint_level: int,
+    previous_feedback: str = "",
+    learning_context: dict[str, Any] | None = None,
+) -> str:
+    learning_context = learning_context or {}
+    code = _truncate_text(code, MAX_CODE_CHARS)
+    previous_feedback = _truncate_text(previous_feedback, 800)
+    return f"""
+You are Eureka's Debug Coach. Your job is to guide a learner through debugging.
+
+CRITICAL RULES:
+- Respond with ONLY valid JSON wrapped in ```json blocks. No other text before or after.
+- NEVER return full fixed code unless hint_level is 4.
+- Do not solve the problem immediately at hint levels 1, 2, or 3.
+- Always ask the learner to try again.
+
+Hint level behavior:
+- level 1: identify the issue category and give a vague conceptual hint.
+- level 2: point to the specific line or small area most likely involved.
+- level 3: provide a partial fix or small code fragment, but not the full solution.
+- level 4: provide the full solution and explain why it works.
+
+Learner context:
+- skill level: {learning_context.get("skill_level", "beginner")}
+- recent mistakes: {json.dumps(learning_context.get("recent_mistakes", []))}
+- pace: {learning_context.get("pace", "steady learner")}
+
+Buggy {language} code:
+```{language}
+{code}
+```
+
+Attempt count: {attempt_count}
+Current hint_level: {hint_level}
+Previous feedback: {previous_feedback}
+
+Response format:
+{{
+  "hint_level": {hint_level},
+  "hint": "your hint here",
+  "encouragement": "brief encouragement here",
+  "next_step": "what the learner should try next"
+}}
+
+Remember: Respond with ONLY ```json [your json here] ``` and nothing else.
+"""
+
+
+def build_challenge_hint_prompt(
+    instructions: str,
+    code: str,
+    test_results: list[dict[str, Any]],
+    hint_level: int,
+    learning_context: dict[str, Any] | None = None,
+) -> str:
+    learning_context = learning_context or {}
+    summarized_results = _truncate_text(json.dumps(test_results), MAX_TEST_RESULTS_CHARS)
+    return build_debug_coach_prompt(
+        code=(
+            f"Challenge instructions:\n{instructions}\n\n"
+            f"Current learner code:\n{code}\n\n"
+            f"Latest test results:\n{summarized_results}"
+        ),
+        language="python",
+        attempt_count=max(1, hint_level),
+        hint_level=hint_level,
+        previous_feedback="The learner is working inside an interactive challenge block.",
+        learning_context=learning_context,
+    )
+
+
+def build_challenge_prompt(
+    title: str,
+    body: str,
+    code: str = "",
+    language: str = "python",
+    learning_context: dict[str, Any] | None = None,
+) -> str:
+    learning_context = learning_context or {}
+    return f"""
+You are an interactive coding challenge generator for a terminal coding tutor.
+
+CRITICAL: You MUST respond with ONLY valid JSON wrapped in ```json blocks. No other text before or after.
+
+Generate one runnable Python practice challenge for this lesson section.
+
+JSON shape:
+{{
+  "topic": "short topic name",
+  "language": "python",
+  "instructions": "Clear 2-4 sentence task. Tell the learner exactly what function to complete.",
+  "starter_code": "Python code with one incomplete function and helpful TODO comments",
+  "tests": [
+    {{
+      "name": "test name",
+      "code": "assert function_name(example_input) == expected_output"
+    }}
+  ]
+}}
+
+Rules:
+- Use Python even if the lesson is about another language, because the terminal runner supports Python.
+- Make the challenge directly related to the section concept.
+- Include exactly one function for the learner to complete.
+- Include 3-5 tests.
+- Tests must be simple Python assert snippets that can run after starter_code.
+- Tests must not require network, file system access, packages, stdin, random values, or hidden state.
+- If testing printed output, use this exact pattern inside the test:
+  import io, contextlib
+  stream = io.StringIO()
+  with contextlib.redirect_stdout(stream):
+      result = function_name(...)
+  assert result is None
+  assert "expected text" in stream.getvalue()
+- Do not call sys.stdout.getvalue().
+- Keep starter_code under 40 lines.
+- Adapt difficulty to:
+  - skill level: {learning_context.get("skill_level", "beginner")}
+  - recent mistakes: {json.dumps(learning_context.get("recent_mistakes", []))}
+  - pace: {learning_context.get("pace", "steady learner")}
+
+Section title: {_truncate_text(title, 200)}
+Section explanation: {_truncate_text(body, MAX_USER_PROMPT_CHARS)}
+Existing example code:
+```{language}
+{_truncate_text(code, 1200)}
+```
+
+Remember: Respond with ONLY ```json [your json here] ``` and nothing else.
+"""
+
+
+def generate_course_response(prompt: str, learning_context: dict[str, Any] | None = None) -> str:
+    return _post_hc_ai_prompt(build_course_prompt(prompt, learning_context), COURSE_MAX_TOKENS)
 
 
 def generate_questions_response(prompt: str) -> str:
-    return _post_gemini_prompt(build_questions_prompt(prompt))
+    return _post_hc_ai_prompt(build_questions_prompt(prompt), QUESTIONS_MAX_TOKENS)
 
 
-def generate_answer_response(prompt: str) -> str:
-    return _post_gemini_prompt(build_answer_prompt(prompt))
+def generate_answer_response(prompt: str, learning_context: dict[str, Any] | None = None) -> str:
+    return _post_hc_ai_prompt(build_answer_prompt(prompt, learning_context), QA_MAX_TOKENS)
+
+
+def generate_debug_coach_response(
+    code: str,
+    language: str = "python",
+    attempt_count: int = 1,
+    hint_level: int = 1,
+    previous_feedback: str = "",
+    learning_context: dict[str, Any] | None = None,
+) -> str:
+    prompt = build_debug_coach_prompt(
+        code=code,
+        language=language,
+        attempt_count=attempt_count,
+        hint_level=max(1, min(4, hint_level)),
+        previous_feedback=previous_feedback,
+        learning_context=learning_context,
+    )
+    return _post_hc_ai_prompt(prompt, DEBUG_MAX_TOKENS)
+
+
+def generate_challenge_hint_response(
+    instructions: str,
+    code: str,
+    test_results: list[dict[str, Any]],
+    hint_level: int,
+    learning_context: dict[str, Any] | None = None,
+) -> str:
+    return _post_hc_ai_prompt(
+        build_challenge_hint_prompt(
+            instructions=instructions,
+            code=code,
+            test_results=test_results,
+            hint_level=max(1, min(4, hint_level)),
+            learning_context=learning_context,
+        ),
+        DEBUG_MAX_TOKENS,
+    )
+
+
+def generate_challenge_response(
+    title: str,
+    body: str,
+    code: str = "",
+    language: str = "python",
+    learning_context: dict[str, Any] | None = None,
+) -> str:
+    return _post_hc_ai_prompt(
+        build_challenge_prompt(
+            title=title,
+            body=body,
+            code=code,
+            language=language,
+            learning_context=learning_context,
+        ),
+        CHALLENGE_MAX_TOKENS,
+    )
