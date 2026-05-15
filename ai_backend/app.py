@@ -261,7 +261,7 @@ def hardware_buzz():
     seconds = int(data.get("seconds") or 0)
     
     # TODO: Implement actual hardware buzzer control here
-    # For now, just acknowledge the request
+    # for now js fake hardware req cause i dont got it anymore
     return jsonify({
         "ok": True,
         "message": f"Buzz signal received - {seconds} modal(s) active",

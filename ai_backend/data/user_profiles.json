@@ -101,15 +101,16 @@
       "Creating a Component": 4,
       "Essay Outline": 2,
       "Introduction": 21,
-      "Introduction to Rust": 13,
-      "Overview of Svelte": 13,
+      "Introduction to Rust": 16,
+      "Overview of Svelte": 134,
       "Reactive Statements": 2,
       "Setting Up Svelte": 3,
+      "Setting up Your Environment": 0,
       "What is Content Creation?": 13,
       "Why Choose Svelte?": 9,
       "Why Content Creation Matters": 18
     },
-    "updated_at": "2026-05-02T20:30:09.022105+00:00",
+    "updated_at": "2026-05-07T01:30:18.908788+00:00",
     "user_id": "default"
   }
 }

@@ -102,10 +102,6 @@ def gen():
 
         yield b"--frame\r\nContent-Type: image/jpeg\r\n\r\n" + buf.tobytes() + b"\r\n"
 
-@app.route("/")
-def home():
-    return '<img src="/video" style="width:100%;">'
-
 @app.route("/video")
 def video():
     return Response(gen(), mimetype="multipart/x-mixed-replace; boundary=frame")
@@ -115,5 +111,6 @@ def get_status():
     global status
     return status
 
-app.run(host="0.0.0.0", port=5001, threaded=True)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5001, threaded=True)
 

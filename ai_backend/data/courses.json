@@ -1282,6 +1282,157 @@
         }
       ],
       "title": "Introduction to the Chinese Language"
+    },
+    {
+      "is_coding": false,
+      "parts": [
+        {
+          "sections": [
+            {
+              "body": "Surfing is a water sport that involves riding on the crest and trough of a wave. It combines physical fitness, balance, and an understanding of ocean conditions. Surfers use a surfboard to glide on the water's surface and perform various maneuvers.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "What is Surfing?"
+            },
+            {
+              "body": "Selecting the right surfboard is crucial for beginners. A longboard is recommended for its stability and ease of use. Look for a board that is slightly longer than your height and has a soft nose to prevent injury.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Choosing the Right Surfboard"
+            },
+            {
+              "body": "Always check the weather and ocean conditions before surfing. Be aware of your surroundings, respect other surfers, and avoid surfing in crowded or dangerous areas. Wearing a leash is essential to prevent your board from drifting away.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Surfing Safety Basics"
+            }
+          ],
+          "title": "Getting Started with Surfing"
+        },
+        {
+          "sections": [
+            {
+              "body": "To catch a wave, start by paddling on your stomach. Position yourself at the right angle to the wave. As the wave approaches, push off with your hands and feet to pop up onto your feet.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Paddling and Positioning"
+            },
+            {
+              "body": "Once you feel the wave lifting you, quickly push up from your knees to a standing position. Keep your knees slightly bent and your center of gravity low to maintain balance.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Popping Up on the Board"
+            },
+            {
+              "body": "Distribute your weight evenly on the board. Shift your weight slightly forward or backward to control your direction. Practice balancing on flat water before attempting to ride waves.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Balancing on the Board"
+            }
+          ],
+          "title": "Mastering the Basics"
+        },
+        {
+          "sections": [
+            {
+              "body": "As the wave approaches, start paddling hard to gain speed. When the wave lifts you, pop up and stand. Keep your eyes on the horizon to maintain balance and direction.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Catching a Wave"
+            },
+            {
+              "body": "To slow down, shift your weight slightly back. To speed up, lean forward. Use your feet to make small adjustments and stay in control.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Controlling Your Speed"
+            },
+            {
+              "body": "To turn, shift your weight to the back foot and push with your front foot. Make small, controlled turns to avoid losing balance. Practice turning on flat water before attempting it on a wave.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Turning on the Board"
+            }
+          ],
+          "title": "Riding Your First Wave"
+        },
+        {
+          "sections": [
+            {
+              "body": "Cutting involves making a sharp turn to change direction quickly. Carving is a smooth, sweeping turn used to maintain speed and control. Both techniques require good balance and timing.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Cutting and Carving"
+            },
+            {
+              "body": "A bottom turn is executed at the bottom of the wave. Shift your weight to the back foot and push with your front foot to turn the board. This maneuver helps you regain speed and control.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Performing a Bottom Turn"
+            },
+            {
+              "body": "A top turn is performed at the top of the wave. Shift your weight forward and use your front foot to turn the board. This maneuver helps you maintain control and position on the wave.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Performing a Top Turn"
+            }
+          ],
+          "title": "Advanced Techniques"
+        },
+        {
+          "sections": [
+            {
+              "body": "Always give the right of way to the surfer closest to the peak of the wave. Avoid dropping in on another surfer's wave. Be polite and respectful to create a positive surfing environment.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Respecting Other Surfers"
+            },
+            {
+              "body": "Surfing has a rich cultural history, especially in places like Hawaii. It is more than a sport; it is a lifestyle that emphasizes respect for the ocean and the community.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Surfing Culture"
+            },
+            {
+              "body": "Surfers should take care of the ocean by avoiding littering, using eco-friendly products, and supporting conservation efforts. Protecting the environment ensures that surfing can continue for future generations.",
+              "challenge": null,
+              "code": null,
+              "code_lang": "general",
+              "footer": null,
+              "title": "Environmental Responsibility"
+            }
+          ],
+          "title": "Surfing Etiquette and Culture"
+        }
+      ],
+      "title": "Introduction to Surfing"
     }
   ]
 }

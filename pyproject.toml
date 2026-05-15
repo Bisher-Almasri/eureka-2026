@@ -1,15 +1,13 @@
 [project]
 name = "eureka"
 version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
-requires-python = ">=3.11"
+description = "Eureka Backend Services"
 dependencies = [
-    "flask>=3.0.0",
-    "psutil>=5.9.0",
-    "pyttsx3>=2.90",
-    "sounddevice>=0.5.1",
-    "SpeechRecognition>=3.10.4",
-    "textual>=8.2.5",
-    "textual-dev>=1.8.0",
+    "flask",
+    "opencv-python",
+    "mediapipe",
+    "numpy",
 ]
+
+[tool.uv]
+managed = true
